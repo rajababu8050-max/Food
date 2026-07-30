@@ -1,0 +1,1102 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Hunger Food - Delivery Partner Portal</title>
+  
+  <!-- Google Fonts: Inter -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+
+  <style>
+    :root {
+      --primary: #ff4757;
+      --primary-hover: #e03f4e;
+      --primary-soft: rgba(255, 71, 87, 0.08);
+      --bg-body: #f8fafc;
+      --bg-card: #ffffff;
+      --bg-dark: #f1f5f9;
+      --text-main: #0f172a;
+      --text-muted: #64748b;
+      --border-color: #e2e8f0;
+      --success: #10b981;
+      --success-soft: rgba(16, 185, 129, 0.12);
+      --warning: #f59e0b;
+      --warning-soft: rgba(245, 158, 11, 0.12);
+      --danger: #ef4444;
+      --info: #3b82f6;
+      --info-soft: rgba(59, 130, 246, 0.12);
+      --radius-sm: 8px;
+      --radius-md: 12px;
+      --radius-lg: 20px;
+      --shadow-sm: 0 1px 3px rgba(0,0,0,0.05);
+      --shadow-md: 0 4px 16px rgba(0,0,0,0.06);
+      --shadow-lg: 0 10px 30px rgba(0,0,0,0.1);
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif; }
+    body { background-color: var(--bg-body); color: var(--text-main); min-height: 100vh; display: flex; flex-direction: column; -webkit-tap-highlight-color: transparent; }
+    .hidden { display: none !important; }
+    .flex-center { display: flex; align-items: center; justify-content: center; }
+
+    /* FULL PAGE LOADER OVERLAY TO PREVENT REFRESH FLICKER */
+    #page-loader {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100vw;
+      height: 100vh;
+      background: var(--bg-body);
+      z-index: 99999;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 16px;
+    }
+    .spinner {
+      width: 44px;
+      height: 44px;
+      border: 4px solid var(--border-color);
+      border-top-color: var(--primary);
+      border-radius: 50%;
+      animation: spin 0.8s linear infinite;
+    }
+    @keyframes spin {
+      to { transform: rotate(360deg); }
+    }
+
+    #toast-container { position: fixed; top: 20px; right: 20px; z-index: 9999; }
+    .toast { 
+      background: #1e293b; 
+      color: #ffffff; 
+      padding: 14px 20px; 
+      margin-bottom: 10px; 
+      border-radius: var(--radius-sm); 
+      border-left: 4px solid var(--primary); 
+      box-shadow: var(--shadow-md); 
+      font-size: 13.5px;
+      font-weight: 500;
+      animation: slideIn 0.3s cubic-bezier(0.16, 1, 0.3, 1) forwards; 
+    }
+    .toast.success { border-left-color: var(--success); }
+    .toast.danger { border-left-color: var(--danger); }
+    @keyframes slideIn { from { transform: translateX(100%); opacity: 0; } to { transform: translateX(0); opacity: 1; } }
+
+    /* AUTH SECTION */
+    .auth-container { width: 100vw; min-height: 100vh; background: var(--bg-body); display: flex; justify-content: center; align-items: center; padding: 20px; }
+    .auth-card { background: var(--bg-card); padding: 36px 32px; border-radius: var(--radius-lg); width: 100%; max-width: 440px; box-shadow: var(--shadow-md); border: 1px solid var(--border-color); }
+    .auth-card h2 { text-align: center; margin-bottom: 24px; color: var(--primary); font-weight: 800; font-size: 24px; letter-spacing: -0.5px; }
+    .form-group { margin-bottom: 18px; }
+    .form-group label { display: block; margin-bottom: 6px; color: var(--text-muted); font-size: 12px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px; }
+    .form-control { width: 100%; padding: 12px 16px; border-radius: var(--radius-sm); border: 1px solid var(--border-color); background: #f8fafc; color: var(--text-main); font-size: 14px; outline: none; transition: all 0.2s; }
+    .form-control:focus { border-color: var(--primary); background: #ffffff; box-shadow: 0 0 0 3px var(--primary-soft); }
+    
+    .btn { padding: 12px 20px; border-radius: var(--radius-sm); border: none; cursor: pointer; font-weight: 600; font-size: 14px; transition: all 0.2s ease; display: inline-flex; align-items: center; justify-content: center; gap: 8px; }
+    .btn:hover { transform: translateY(-1px); }
+    .btn-primary { background: var(--primary); color: white; width: 100%; box-shadow: 0 4px 12px rgba(255, 71, 87, 0.25); }
+    .btn-primary:hover { background: var(--primary-hover); }
+    .btn-outline { background: transparent; border: 1.5px solid var(--border-color); color: var(--text-muted); width: 100%; margin-top: 12px; }
+    .btn-outline:hover { border-color: var(--primary); color: var(--primary); background: var(--primary-soft); }
+    .btn-sm { padding: 8px 14px; font-size: 12.5px; width: auto; }
+    .btn-success { background: var(--success); color: white; box-shadow: 0 4px 12px rgba(16, 185, 129, 0.2); }
+    .btn-danger { background: var(--danger); color: white; }
+    .btn-info { background: var(--info); color: white; box-shadow: 0 4px 12px rgba(59, 130, 246, 0.2); }
+    .btn-large { padding: 14px 20px; font-size: 15px; font-weight: 700; width: 100%; margin-top: 10px; border-radius: var(--radius-sm); }
+    
+    /* GET DIRECTIONS BUTTON */
+    .btn-maps { background: #2563eb; color: white; margin-top: 10px; margin-bottom: 12px; font-weight: 700; width: 100%; box-shadow: 0 4px 12px rgba(37, 99, 235, 0.25); }
+    .btn-maps:hover { background: #1d4ed8; }
+    .btn-customer-maps { background: #10b981; color: white; margin-top: 10px; margin-bottom: 12px; font-weight: 700; width: 100%; box-shadow: 0 4px 12px rgba(16, 185, 129, 0.25); }
+    .btn-customer-maps:hover { background: #059669; }
+
+    /* DASHBOARD LAYOUT */
+    #dashboard-view { display: flex; flex-direction: column; min-height: 100vh; }
+    .topbar { height: 64px; background: rgba(255, 255, 255, 0.9); backdrop-filter: blur(12px); border-bottom: 1px solid var(--border-color); display: flex; align-items: center; justify-content: space-between; padding: 0 20px; position: sticky; top: 0; z-index: 100; }
+    .topbar-brand { font-size: 18px; font-weight: 800; color: var(--primary); letter-spacing: -0.5px; }
+    .topbar-status { display: flex; align-items: center; gap: 16px; }
+
+    /* GPS LIVE BANNER */
+    .gps-status-bar {
+      background: #e0f2fe;
+      color: #0369a1;
+      padding: 8px 16px;
+      font-size: 12px;
+      font-weight: 700;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      border-bottom: 1px solid #bae6fd;
+    }
+    .gps-indicator {
+      width: 8px;
+      height: 8px;
+      background-color: var(--success);
+      border-radius: 50%;
+      display: inline-block;
+      margin-right: 6px;
+      animation: pulse 1.5s infinite;
+    }
+    @keyframes pulse {
+      0% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.7); }
+      70% { transform: scale(1); box-shadow: 0 0 0 8px rgba(16, 185, 129, 0); }
+      100% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(16, 185, 129, 0); }
+    }
+
+    /* TOGGLE SWITCH */
+    .switch { position: relative; display: inline-block; width: 46px; height: 24px; }
+    .switch input { opacity: 0; width: 0; height: 0; }
+    .slider { position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0; background-color: #cbd5e1; transition: .3s; border-radius: 24px; }
+    .slider:before { position: absolute; content: ""; height: 18px; width: 18px; left: 3px; bottom: 3px; background-color: white; transition: .3s; border-radius: 50%; box-shadow: 0 1px 3px rgba(0,0,0,0.2); }
+    input:checked + .slider { background-color: var(--success); }
+    input:checked + .slider:before { transform: translateX(22px); }
+
+    .content-area { padding: 20px 16px; flex: 1; max-width: 600px; margin: 0 auto; width: 100%; }
+
+    /* STATS GRID */
+    .stats-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; margin-bottom: 20px; }
+    .stat-card { background: var(--bg-card); border-radius: var(--radius-md); padding: 12px 6px; text-align: center; border: 1px solid var(--border-color); box-shadow: var(--shadow-sm); }
+    .stat-card h4 { font-size: 10px; color: var(--text-muted); margin-bottom: 4px; text-transform: uppercase; font-weight: 700; letter-spacing: 0.5px; }
+    .stat-card .value { font-size: 15px; font-weight: 800; color: var(--text-main); }
+
+    /* DELIVERY TABS */
+    .delivery-tabs { display: flex; gap: 8px; margin-bottom: 20px; background: var(--bg-card); padding: 6px; border-radius: var(--radius-md); border: 1px solid var(--border-color); box-shadow: var(--shadow-sm); }
+    .d-tab-btn { flex: 1; padding: 12px 10px; font-size: 13px; font-weight: 700; color: var(--text-muted); background: transparent; border: none; border-radius: var(--radius-sm); cursor: pointer; text-align: center; transition: all 0.2s ease; display: flex; align-items: center; justify-content: center; }
+    .d-tab-btn.btn-orange.active { background: #f97316 !important; color: white !important; box-shadow: 0 4px 12px rgba(249, 115, 22, 0.3); }
+    .d-tab-btn.btn-green.active { background: var(--success) !important; color: white !important; box-shadow: 0 4px 12px rgba(16, 185, 129, 0.3); }
+    .tab-count { background: rgba(0,0,0,0.08); padding: 2px 8px; border-radius: 12px; font-size: 11px; margin-left: 6px; font-weight: 800; }
+    .d-tab-btn.active .tab-count { background: rgba(255,255,255,0.25); color: white; }
+
+    /* ORDER CARDS */
+    .order-card { background: var(--bg-card); border-radius: var(--radius-md); padding: 20px; border: 1px solid var(--border-color); margin-bottom: 18px; box-shadow: var(--shadow-md); transition: transform 0.2s; }
+    .order-header { display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--border-color); padding-bottom: 12px; margin-bottom: 12px; }
+    .order-info-row { margin-bottom: 8px; font-size: 13.5px; color: var(--text-muted); line-height: 1.4; }
+    .order-info-row strong { color: var(--text-main); font-weight: 600; }
+
+    .badge { padding: 4px 10px; border-radius: 6px; font-size: 11px; font-weight: 700; display: inline-block; text-transform: uppercase; letter-spacing: 0.3px; }
+    .badge-success { background: #d1fae5; color: #047857; border: 1px solid rgba(16, 185, 129, 0.3); }
+    .badge-info { background: #dbeafe; color: #1e40af; border: 1px solid rgba(59, 130, 246, 0.3); }
+    .badge-warning { background: #ffedd5; color: #c2410c; border: 1px solid rgba(249, 115, 22, 0.3); }
+    .badge-danger { background: #fee2e2; color: #b91c1c; border: 1px solid rgba(239, 68, 68, 0.3); }
+
+    /* MODAL WINDOWS */
+    .modal { position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: rgba(15, 23, 42, 0.5); backdrop-filter: blur(4px); display: flex; align-items: center; justify-content: center; z-index: 1000; padding: 16px; }
+    .modal-content { background: var(--bg-card); border-radius: var(--radius-lg); padding: 28px 24px; width: 100%; max-width: 420px; border: 1px solid var(--border-color); box-shadow: var(--shadow-lg); }
+    .modal-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }
+    .modal-close { cursor: pointer; font-size: 22px; color: var(--text-muted); transition: color 0.2s; }
+    .modal-close:hover { color: var(--text-main); }
+
+    .chat-modal-content { background: var(--bg-card); border-radius: var(--radius-lg); width: 100%; max-width: 460px; height: 80vh; display: flex; flex-direction: column; border: 1px solid var(--border-color); overflow: hidden; box-shadow: var(--shadow-lg); }
+    .chat-messages { flex: 1; padding: 16px; overflow-y: auto; display: flex; flex-direction: column; gap: 10px; background: #f8fafc; }
+    .chat-bubble { max-width: 78%; padding: 10px 14px; border-radius: 14px; font-size: 13px; line-height: 1.4; word-wrap: break-word; box-shadow: var(--shadow-sm); }
+    .chat-bubble.me { align-self: flex-end; background: var(--primary); color: white; border-bottom-right-radius: 2px; }
+    .chat-bubble.other { align-self: flex-start; background: #ffffff; color: var(--text-main); border-bottom-left-radius: 2px; border: 1px solid var(--border-color); }
+
+    .congrats-card { text-align: center; padding: 16px 8px; }
+    .congrats-icon { font-size: 54px; margin-bottom: 12px; animation: bounce 0.6s ease infinite alternate; }
+    .congrats-amount { font-size: 34px; font-weight: 800; color: var(--success); margin: 12px 0; }
+    @keyframes bounce { from { transform: translateY(0); } to { transform: translateY(-10px); } }
+
+    .btn-relative { position: relative; overflow: visible; }
+    .chat-badge {
+      background: var(--danger);
+      color: white;
+      border-radius: 50%;
+      padding: 2px 6px;
+      font-size: 10px;
+      position: absolute;
+      top: -6px;
+      right: -6px;
+      font-weight: 800;
+      border: 2px solid var(--bg-card);
+      min-width: 20px;
+      text-align: center;
+      z-index: 10;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.2);
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Full-Page Loading Overlay (Prevents Refresh Flickering) -->
+  <div id="page-loader">
+    <div class="spinner"></div>
+    <div style="font-weight: 700; color: var(--text-muted); font-size: 14px;">Loading Delivery Portal...</div>
+  </div>
+
+  <audio id="pickup-sound" src="https://assets.mixkit.co/active_storage/sfx/2869/2869-preview.mp3" preload="auto"></audio>
+  <div id="toast-container"></div>
+
+  <!-- AUTHENTICATION (Hidden initially) -->
+  <div id="auth-wrapper" class="hidden">
+    <div id="login-view" class="auth-container">
+      <div class="auth-card">
+        <h2>Delivery Partner Login</h2>
+        <form id="login-form">
+          <div class="form-group">
+            <label>Email Address</label>
+            <input type="email" id="login-email" class="form-control" required placeholder="rider@hungerfood.com">
+          </div>
+          <div class="form-group">
+            <label>Password</label>
+            <input type="password" id="login-password" class="form-control" required placeholder="••••••••">
+          </div>
+          <button type="submit" class="btn btn-primary">Login to Delivery Portal</button>
+        </form>
+        <button class="btn btn-outline" onclick="switchAuth('signup')">Register as Delivery Partner</button>
+      </div>
+    </div>
+
+    <div id="signup-view" class="auth-container hidden">
+      <div class="auth-card">
+        <h2>Register Delivery Partner</h2>
+        <form id="signup-form">
+          <div class="form-group">
+            <label>Full Name</label>
+            <input type="text" id="signup-name" class="form-control" required placeholder="Alex Mercer">
+          </div>
+          <div class="form-group">
+            <label>Email Address</label>
+            <input type="email" id="signup-email" class="form-control" required placeholder="alex@hungerfood.com">
+          </div>
+          <div class="form-group">
+            <label>Phone Number</label>
+            <input type="tel" id="signup-phone" class="form-control" required placeholder="9876543210">
+          </div>
+          <div class="form-group">
+            <label>Vehicle Type / Number</label>
+            <input type="text" id="signup-vehicle" class="form-control" required placeholder="Motorcycle (KA-01-AB-1234)">
+          </div>
+          <div class="form-group">
+            <label>Password</label>
+            <input type="password" id="signup-password" class="form-control" required placeholder="••••••••">
+          </div>
+          <button type="submit" class="btn btn-primary">Submit for Approval</button>
+        </form>
+        <button class="btn btn-outline" onclick="switchAuth('login')">Back to Login</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- PENDING APPROVAL -->
+  <div id="pending-approval-view" class="auth-container hidden">
+    <div class="auth-card" style="text-align: center;">
+      <h2 style="color: var(--warning);">Approval Pending</h2>
+      <p style="color: var(--text-muted); font-size: 14px; margin-top: 10px; line-height: 1.5;">Your delivery partner account registration has been submitted successfully. Admin approval is required before you can go online and process deliveries.</p>
+      <button class="btn btn-danger" style="margin-top:20px; width:100%;" onclick="logoutPartner()">Logout</button>
+    </div>
+  </div>
+
+  <!-- MAIN DASHBOARD -->
+  <div id="dashboard-view" class="hidden">
+    <header class="topbar">
+      <div class="topbar-brand" id="delivery-display-name">Hunger Delivery</div>
+      <div class="topbar-status">
+        <div class="flex-center" style="gap: 8px;">
+          <span style="font-size: 13px; color: var(--text-muted); font-weight:600;">Online:</span>
+          <label class="switch">
+            <input type="checkbox" id="toggle-online" onchange="updateOnlineStatus()">
+            <span class="slider"></span>
+          </label>
+        </div>
+        <button class="btn btn-danger btn-sm" onclick="logoutPartner()">Logout</button>
+      </div>
+    </header>
+
+    <!-- LIVE GPS STATUS TOPBAR BANNER -->
+    <div class="gps-status-bar">
+      <span><span class="gps-indicator"></span><strong>Delivery Boy Location:</strong> Live GPS Active</span>
+      <span id="gps-coords-display" style="font-size:11px;">Acquiring signal...</span>
+    </div>
+
+    <main class="content-area">
+      <!-- STATS GRID -->
+      <div class="stats-grid">
+        <div class="stat-card">
+          <h4>Today</h4>
+          <div class="value" id="stat-today-earnings">₹0.00</div>
+        </div>
+        <div class="stat-card">
+          <h4>Weekly</h4>
+          <div class="value" id="stat-weekly-earnings">₹0.00</div>
+        </div>
+        <div class="stat-card">
+          <h4>Monthly</h4>
+          <div class="value" id="stat-monthly-earnings">₹0.00</div>
+        </div>
+        <div class="stat-card">
+          <h4>Rating</h4>
+          <div class="value" id="stat-avg-rating" style="color: var(--warning);">⭐ 5.0 (0)</div>
+        </div>
+      </div>
+
+      <nav class="delivery-tabs">
+        <button class="d-tab-btn btn-orange active" id="tab-btn-new" onclick="switchDeliveryTab('NEW')">
+          New Orders <span class="tab-count" id="count-new">0</span>
+        </button>
+        <button class="d-tab-btn btn-green" id="tab-btn-complete" onclick="switchDeliveryTab('COMPLETE')">
+          Order Complete <span class="tab-count" id="count-complete">0</span>
+        </button>
+      </nav>
+
+      <div id="assigned-orders-container">Loading deliveries...</div>
+    </main>
+  </div>
+
+  <!-- PICKUP OTP MODAL -->
+  <div id="pickup-otp-modal" class="modal hidden">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h3 style="font-size:16px; font-weight:700;">Restaurant Pickup Verification</h3>
+        <span class="modal-close" onclick="closeModal('pickup-otp-modal')">&times;</span>
+      </div>
+      <input type="hidden" id="pickup-otp-order-id">
+      <div class="form-group">
+        <label>Ask 4-Digit Pickup OTP from Restaurant Counter Manager</label>
+        <input type="number" id="pickup-otp-input" class="form-control" placeholder="Enter Pickup OTP" maxlength="4">
+      </div>
+      <button class="btn btn-success btn-large" onclick="verifyPickupOtp()">Verify & Pickup Order</button>
+    </div>
+  </div>
+
+  <!-- CUSTOMER OTP MODAL -->
+  <div id="otp-modal" class="modal hidden">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h3 style="font-size:16px; font-weight:700;">Customer Delivery OTP Verification</h3>
+        <span class="modal-close" onclick="closeModal('otp-modal')">&times;</span>
+      </div>
+      <input type="hidden" id="otp-order-id">
+      <div class="form-group">
+        <label>Enter 4-Digit Customer OTP</label>
+        <input type="number" id="otp-input" class="form-control" placeholder="1234" maxlength="4">
+      </div>
+      <button class="btn btn-success btn-large" onclick="verifyOtpAndDeliver()">Confirm Delivery</button>
+    </div>
+  </div>
+
+  <!-- DELIVERY ISSUE / CANCELLATION MODAL -->
+  <div id="delivery-issue-modal" class="modal hidden">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h3 style="font-size:16px; font-weight:700; color:var(--danger);">Report Delivery Issue / Cancel</h3>
+        <span class="modal-close" onclick="closeModal('delivery-issue-modal')">&times;</span>
+      </div>
+      <input type="hidden" id="issue-order-id">
+      
+      <div class="form-group">
+        <label>Select Reason for Non-Delivery</label>
+        <select id="delivery-issue-reason-select" class="form-control" style="font-weight:600;" onchange="toggleCustomDeliveryReasonInput(this.value)">
+          <option value="Customer Not Answering Call / Phone Switched Off">📞 Customer Not Answering Call / Switched Off</option>
+          <option value="Customer Refused to Share OTP">🔑 Customer Refused / Not Sharing OTP</option>
+          <option value="Customer Not Available at Location">📍 Customer Not Available at Delivery Address</option>
+          <option value="Customer Refused Order at Doorstep">❌ Customer Refused Order at Doorstep</option>
+          <option value="OTHER">✍️ Other Reason (Write below)</option>
+        </select>
+      </div>
+
+      <div class="form-group hidden" id="custom-delivery-reason-box">
+        <label>Custom Reason Details</label>
+        <textarea id="custom-delivery-reason-text" class="form-control" placeholder="Write specific issue details..."></textarea>
+      </div>
+
+      <button class="btn btn-danger btn-large" onclick="submitDeliveryIssueCancellation()">Submit & Mark Cancelled</button>
+    </div>
+  </div>
+
+  <!-- CONGRATS MODAL -->
+  <div id="congrats-modal" class="modal hidden">
+    <div class="modal-content">
+      <div class="congrats-card">
+        <div class="congrats-icon">🎉</div>
+        <h2 style="color: var(--success); font-weight:800;">Congratulations!</h2>
+        <p style="font-size: 14px; color: var(--text-muted); margin-top: 6px;">Order delivered successfully!</p>
+        <div class="congrats-amount" id="congrats-earned-amount">+ ₹0.00</div>
+        <p style="font-size: 13px; color: var(--text-main);">Earnings added to your wallet for this delivery.</p>
+        <button class="btn btn-success btn-large" style="margin-top:20px;" onclick="closeModal('congrats-modal')">Great, Thank You!</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- LIVE CHAT MODAL -->
+  <div id="chat-modal" class="modal hidden">
+    <div class="chat-modal-content">
+      <div class="modal-header" style="background:#ffffff; padding:16px 20px; border-bottom:1px solid var(--border-color);">
+        <h4 id="chat-title" style="font-size:15px; font-weight:700;">Chat with Customer</h4>
+        <span class="modal-close" onclick="closeModal('chat-modal')">&times;</span>
+      </div>
+      <div id="chat-messages" class="chat-messages"></div>
+      <div style="padding:14px; border-top:1px solid var(--border-color); display:flex; gap:10px; background:var(--bg-card);">
+        <input type="text" id="chat-input" class="form-control" placeholder="Type a message..." onkeypress="if(event.key==='Enter') sendChatMessage()">
+        <button class="btn btn-primary" style="width:auto; padding:0 20px;" onclick="sendChatMessage()">Send</button>
+      </div>
+    </div>
+  </div>
+
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
+    import { getAuth, signInWithEmailAndPassword, createUserWithEmailAndPassword, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
+    import { getDatabase, ref, set, get, update, push, onValue } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-database.js";
+
+    const firebaseConfig = {
+      apiKey: "AIzaSyA9RmU8Fc96wvfN9S3nRzhDJF518XzK7fI",
+      authDomain: "food-4c911.firebaseapp.com",
+      databaseURL: "https://food-4c911-default-rtdb.firebaseio.com",
+      projectId: "food-4c911",
+      storageBucket: "food-4c911.firebasestorage.app",
+      messagingSenderId: "334589277094",
+      appId: "1:334589277094:web:95fc7dc6a298eb08031567"
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const auth = getAuth(app);
+    const db = getDatabase(app);
+
+    window.state = {
+      user: null, 
+      partner: null, 
+      assignedOrders: {}, 
+      restaurants: {}, 
+      customers: {}, 
+      allChats: {},
+      currentDeliveryTab: 'NEW', 
+      activeChatOrderId: null,
+      currentGpsLocation: null
+    };
+
+    let globalGpsWatchId = null;
+    let previousReadyOrderIds = null;
+
+    // Helper to hide loader overlay smoothly
+    function hideLoader() {
+      const loader = document.getElementById('page-loader');
+      if (loader) loader.classList.add('hidden');
+    }
+
+    // Standardized status normalizer function
+    window.normalizeStatus = function(statusStr) {
+      if (!statusStr) return 'PLACED';
+      const clean = statusStr.toString().trim().toUpperCase();
+      if (clean === 'PENDING' || clean === 'ORDER_PLACED') return 'PLACED';
+      if (clean === 'CONFIRMED' || clean === 'ACCEPT') return 'ACCEPTED';
+      if (clean === 'PREPARATION' || clean === 'COOKING') return 'PREPARING';
+      if (clean === 'READY') return 'READY_FOR_PICKUP';
+      if (clean === 'DISPATCHED' || clean === 'ON_THE_WAY') return 'OUT_FOR_DELIVERY';
+      return clean;
+    };
+
+    function startContinuousGpsTracking() {
+      if (!navigator.geolocation) {
+        document.getElementById('gps-coords-display').innerText = "GPS Not Supported";
+        return;
+      }
+
+      if (globalGpsWatchId !== null) navigator.geolocation.clearWatch(globalGpsWatchId);
+
+      globalGpsWatchId = navigator.geolocation.watchPosition(
+        (position) => {
+          const lat = position.coords.latitude;
+          const lng = position.coords.longitude;
+          
+          window.state.currentGpsLocation = { lat, lng };
+
+          document.getElementById('gps-coords-display').innerText = `${lat.toFixed(4)}, ${lng.toFixed(4)}`;
+
+          if (window.state.assignedOrders) {
+            Object.entries(window.state.assignedOrders).forEach(([orderId, order]) => {
+              const normStatus = window.normalizeStatus(order.status);
+              if (['PICKED_UP', 'OUT_FOR_DELIVERY'].includes(normStatus)) {
+                update(ref(db, `orders/${orderId}/liveLocation`), {
+                  lat: lat,
+                  lng: lng,
+                  heading: position.coords.heading || 0,
+                  speed: position.coords.speed || 0,
+                  isLive: true,
+                  updatedAt: Date.now()
+                }).catch(() => {});
+              }
+            });
+          }
+
+          if (window.state.user && window.state.user.uid) {
+            update(ref(db, `deliveryPartners/${window.state.user.uid}/lastLocation`), {
+              lat: lat,
+              lng: lng,
+              updatedAt: Date.now()
+            }).catch(() => {});
+          }
+        },
+        (err) => {
+          document.getElementById('gps-coords-display').innerText = "GPS Active (Waiting Fix)";
+        },
+        { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }
+      );
+    }
+
+    function attachRatingListener(uid) {
+      onValue(ref(db, `deliveryRatings/${uid}`), (snapshot) => {
+        const ratingsData = snapshot.val() || {};
+        const ratingsList = Object.values(ratingsData);
+
+        const ratingEl = document.getElementById('stat-avg-rating');
+        if (!ratingEl) return;
+
+        if (ratingsList.length > 0) {
+          const totalStars = ratingsList.reduce((sum, item) => sum + Number(item.rating || 0), 0);
+          const avgRating = (totalStars / ratingsList.length).toFixed(1);
+          ratingEl.innerText = `⭐ ${avgRating} (${ratingsList.length})`;
+        } else {
+          ratingEl.innerText = `⭐ 5.0 (0)`;
+        }
+      });
+    }
+
+    window.showToast = function(msg, type = 'info') {
+      const c = document.getElementById('toast-container');
+      const t = document.createElement('div');
+      t.className = `toast ${type}`; t.innerText = msg;
+      c.appendChild(t); setTimeout(() => t.remove(), 3500);
+    };
+
+    window.playPickupSound = function() {
+      const audio = document.getElementById('pickup-sound');
+      if (audio) { 
+        audio.currentTime = 0; 
+        audio.play().catch(e => console.log("Audio play blocked:", e)); 
+      }
+    };
+
+    window.switchAuth = function(view) {
+      if (view === 'signup') {
+        document.getElementById('login-view').classList.add('hidden');
+        document.getElementById('signup-view').classList.remove('hidden');
+      } else {
+        document.getElementById('signup-view').classList.add('hidden');
+        document.getElementById('login-view').classList.remove('hidden');
+      }
+    };
+
+    document.getElementById('login-form').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      try {
+        await signInWithEmailAndPassword(auth, document.getElementById('login-email').value, document.getElementById('login-password').value);
+      } catch (err) { showToast(err.message, 'danger'); }
+    });
+
+    document.getElementById('signup-form').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      try {
+        const cred = await createUserWithEmailAndPassword(auth, document.getElementById('signup-email').value, document.getElementById('signup-password').value);
+        await set(ref(db, `deliveryPartners/${cred.user.uid}`), {
+          name: document.getElementById('signup-name').value,
+          email: document.getElementById('signup-email').value,
+          phone: document.getElementById('signup-phone').value,
+          vehicle: document.getElementById('signup-vehicle').value,
+          approved: false, online: true, earnings: 0,
+          createdAt: Date.now(), updatedAt: Date.now()
+        });
+        showToast('Registration submitted for approval', 'warning');
+      } catch (err) { showToast(err.message, 'danger'); }
+    });
+
+    // SECURE AUTH STATE LISTENER (PREVENTS REFRESH FLICKER)
+    onAuthStateChanged(auth, async (user) => {
+      if (user) {
+        window.state.user = user;
+        startContinuousGpsTracking();
+
+        onValue(ref(db, `deliveryPartners/${user.uid}`), async (snapshot) => {
+          if (!snapshot.exists()) {
+            await signOut(auth);
+            showToast('❌ Account not found! Please contact admin.', 'danger');
+            document.getElementById('auth-wrapper').classList.remove('hidden');
+            document.getElementById('pending-approval-view').classList.add('hidden');
+            document.getElementById('dashboard-view').classList.add('hidden');
+            hideLoader();
+            return;
+          }
+
+          const data = snapshot.val();
+          window.state.partner = data;
+          document.getElementById('auth-wrapper').classList.add('hidden');
+
+          if (!data.approved) {
+            document.getElementById('pending-approval-view').classList.remove('hidden');
+            document.getElementById('dashboard-view').classList.add('hidden');
+          } else {
+            document.getElementById('pending-approval-view').classList.add('hidden');
+            document.getElementById('dashboard-view').classList.remove('hidden');
+            document.getElementById('delivery-display-name').innerText = data.name || "Hunger Delivery";
+            document.getElementById('toggle-online').checked = data.online === true;
+
+            attachRealtimeListeners(user.uid);
+            attachRatingListener(user.uid);
+          }
+          hideLoader();
+        });
+      } else {
+        document.getElementById('auth-wrapper').classList.remove('hidden');
+        document.getElementById('pending-approval-view').classList.add('hidden');
+        document.getElementById('dashboard-view').classList.add('hidden');
+        hideLoader();
+      }
+    });
+
+    window.logoutPartner = async function() { await signOut(auth); showToast('Logged out successfully'); };
+
+    function attachRealtimeListeners(uid) {
+      onValue(ref(db, 'restaurants'), (snapshot) => { window.state.restaurants = snapshot.val() || {}; renderAssignedOrders(); });
+      onValue(ref(db, 'customers'), (snapshot) => { window.state.customers = snapshot.val() || {}; renderAssignedOrders(); });
+      
+      onValue(ref(db, 'orders'), (snapshot) => {
+        const allOrders = snapshot.val() || {};
+        const myAssignedOrders = Object.entries(allOrders).filter(([_, o]) => o.deliveryUid === uid);
+        window.state.assignedOrders = Object.fromEntries(myAssignedOrders);
+
+        const currentReadyOrderIds = new Set(
+          myAssignedOrders.filter(([_, o]) => window.normalizeStatus(o.status) === 'READY_FOR_PICKUP').map(([id]) => id)
+        );
+
+        if (previousReadyOrderIds !== null) {
+          let hasNewReadyOrder = false;
+          currentReadyOrderIds.forEach(id => {
+            if (!previousReadyOrderIds.has(id)) {
+              hasNewReadyOrder = true;
+            }
+          });
+
+          if (hasNewReadyOrder) {
+            window.playPickupSound();
+            showToast('🔔 Order is Ready for Pickup at Restaurant!', 'success');
+          }
+        }
+
+        previousReadyOrderIds = currentReadyOrderIds;
+
+        renderAssignedOrders();
+        calculateEarnings();
+      });
+
+      onValue(ref(db, 'chats'), (snapshot) => {
+        window.state.allChats = snapshot.val() || {};
+        window.updateAllChatBadges();
+        if (window.state.activeChatOrderId) {
+          renderChatMessages(window.state.activeChatOrderId);
+        }
+      });
+    }
+
+    window.updateOnlineStatus = async function() {
+      try {
+        await update(ref(db, `deliveryPartners/${window.state.user.uid}`), { online: document.getElementById('toggle-online').checked, updatedAt: Date.now() });
+        showToast(`Status updated`, 'success');
+      } catch (err) { showToast(err.message, 'danger'); }
+    };
+
+    window.switchDeliveryTab = function(tab) {
+      window.state.currentDeliveryTab = tab;
+      document.getElementById('tab-btn-new').classList.toggle('active', tab === 'NEW');
+      document.getElementById('tab-btn-complete').classList.toggle('active', tab === 'COMPLETE');
+      renderAssignedOrders();
+    };
+
+    window.getUnreadCount = function(orderId) {
+      if (!window.state.allChats || !window.state.allChats[orderId]) return 0;
+      const msgs = Object.values(window.state.allChats[orderId]);
+      return msgs.filter(m => m.senderUid !== window.state.user.uid && m.read === false).length;
+    };
+
+    window.markChatsAsRead = async function(orderId) {
+      if (!window.state.allChats || !window.state.allChats[orderId]) return;
+      const msgs = Object.entries(window.state.allChats[orderId]);
+      const updates = {};
+      let hasUpdates = false;
+      msgs.forEach(([msgId, m]) => {
+        if (m.senderUid !== window.state.user.uid && m.read === false) {
+          updates[`chats/${orderId}/${msgId}/read`] = true;
+          hasUpdates = true;
+        }
+      });
+      if (hasUpdates) {
+        await update(ref(db), updates);
+      }
+    };
+
+    window.updateAllChatBadges = function() {
+      document.querySelectorAll('[id^="chat-badge-"]').forEach(el => {
+        const orderId = el.id.replace('chat-badge-', '');
+        const unread = window.getUnreadCount(orderId);
+        if (unread > 0) {
+          el.innerText = unread;
+          el.classList.remove('hidden');
+        } else {
+          el.classList.add('hidden');
+        }
+      });
+
+      if (window.state.activeChatOrderId) {
+        window.markChatsAsRead(window.state.activeChatOrderId);
+      }
+    };
+
+    // 1. DIRECTIONS TO RESTAURANT
+    window.openRestaurantDirections = function(restLat, restLng, restAddress = '', restName = '') {
+      showToast("🚀 Opening Navigation to Restaurant...", "info");
+
+      const launchMap = (originParam) => {
+        let destinationParam = "";
+        
+        if (restLat && restLng && Number(restLat) !== 0 && Number(restLng) !== 0 && Number(restLat) !== 28.6139) {
+          destinationParam = `${restLat},${restLng}`;
+        } else {
+          const fullQuery = [restName, restAddress].filter(Boolean).join(', ').trim();
+          if (fullQuery && fullQuery !== 'Address N/A' && fullQuery !== 'Restaurant') {
+            destinationParam = encodeURIComponent(fullQuery);
+          } else if (restAddress && restAddress !== 'Address N/A') {
+            destinationParam = encodeURIComponent(restAddress);
+          } else {
+            showToast("❌ Restaurant address/location not available", "danger");
+            return;
+          }
+        }
+
+        const mapsUrl = originParam 
+          ? `https://www.google.com/maps/dir/?api=1&origin=${originParam}&destination=${destinationParam}&travelmode=bicycling`
+          : `https://www.google.com/maps/dir/?api=1&destination=${destinationParam}&travelmode=bicycling`;
+          
+        window.open(mapsUrl, '_blank');
+      };
+
+      if (window.state.currentGpsLocation) {
+        const origin = `${window.state.currentGpsLocation.lat},${window.state.currentGpsLocation.lng}`;
+        launchMap(origin);
+      } else if (navigator.geolocation) {
+        navigator.geolocation.getCurrentPosition(
+          (position) => launchMap(`${position.coords.latitude},${position.coords.longitude}`),
+          () => launchMap(null)
+        );
+      } else {
+        launchMap(null);
+      }
+    };
+
+    // 2. DIRECTIONS TO CUSTOMER LIVE GPS LOCATION
+    window.openCustomerDirections = function(custLat, custLng, custAddress = '', custName = '') {
+      showToast("🗺️ Launching Directions to Customer...", "info");
+
+      const launchCustomerMap = (originParam) => {
+        let destinationParam = "";
+
+        if (custLat && custLng && Number(custLat) !== 0 && Number(custLng) !== 0) {
+          destinationParam = `${custLat},${custLng}`;
+        } else {
+          const fullQuery = [custName, custAddress].filter(Boolean).join(', ').trim();
+          if (fullQuery && fullQuery !== 'Address N/A' && fullQuery !== 'Valued Customer') {
+            destinationParam = encodeURIComponent(fullQuery);
+          } else if (custAddress && custAddress !== 'Address N/A') {
+            destinationParam = encodeURIComponent(custAddress);
+          } else {
+            showToast("❌ Customer location or address not available", "danger");
+            return;
+          }
+        }
+
+        const mapsUrl = originParam 
+          ? `https://www.google.com/maps/dir/?api=1&origin=${originParam}&destination=${destinationParam}&travelmode=bicycling`
+          : `https://www.google.com/maps/dir/?api=1&destination=${destinationParam}&travelmode=bicycling`;
+
+        window.open(mapsUrl, '_blank');
+      };
+
+      if (window.state.currentGpsLocation) {
+        const origin = `${window.state.currentGpsLocation.lat},${window.state.currentGpsLocation.lng}`;
+        launchCustomerMap(origin);
+      } else if (navigator.geolocation) {
+        navigator.geolocation.getCurrentPosition(
+          (position) => launchCustomerMap(`${position.coords.latitude},${position.coords.longitude}`),
+          () => launchCustomerMap(null)
+        );
+      } else {
+        launchCustomerMap(null);
+      }
+    };
+
+    function renderAssignedOrders() {
+      const container = document.getElementById('assigned-orders-container');
+      const allEntries = Object.entries(window.state.assignedOrders).reverse();
+
+      const newOrders = allEntries.filter(([_, o]) => {
+        const normStatus = window.normalizeStatus(o.status);
+        return ['ACCEPTED', 'PREPARING', 'READY_FOR_PICKUP', 'PICKED_UP', 'OUT_FOR_DELIVERY'].includes(normStatus);
+      });
+      const completeOrders = allEntries.filter(([_, o]) => {
+        const normStatus = window.normalizeStatus(o.status);
+        return ['DELIVERED', 'CANCELLED'].includes(normStatus);
+      });
+
+      document.getElementById('count-new').innerText = newOrders.length;
+      document.getElementById('count-complete').innerText = completeOrders.length;
+
+      let filteredEntries = window.state.currentDeliveryTab === 'NEW' ? newOrders : completeOrders;
+
+      if (filteredEntries.length === 0) {
+        container.innerHTML = `<div class="order-card"><p style="text-align:center; color:var(--text-muted);">No orders in this section.</p></div>`;
+        return;
+      }
+
+      container.innerHTML = filteredEntries.map(([id, o]) => {
+        const normStatus = window.normalizeStatus(o.status);
+        const r = window.state.restaurants[o.restaurantId] || {};
+        const c = window.state.customers[o.customerUid] || {};
+        const customerName = (c.name || o.customerName || 'Valued Customer').replace(/'/g, "\\'");
+        const customerAddress = (o.address || 'Address N/A').replace(/'/g, "\\'");
+        
+        const restLat = r.lat || o.restaurantLat || 0;
+        const restLng = r.lng || o.restaurantLng || 0;
+        const restName = (r.name || o.restaurantName || '').replace(/'/g, "\\'");
+        const restAddress = (r.address || o.restaurantAddress || '').replace(/'/g, "\\'");
+
+        const custLat = (o.customerGeoLocation && o.customerGeoLocation.lat) ? o.customerGeoLocation.lat : 0;
+        const custLng = (o.customerGeoLocation && o.customerGeoLocation.lng) ? o.customerGeoLocation.lng : 0;
+
+        return `
+          <div class="order-card">
+            <div class="order-header">
+              <div>
+                <strong style="font-size:15px;">Order #${o.orderNumber || id}</strong>
+                <span class="badge ${normStatus === 'READY_FOR_PICKUP' ? 'badge-warning' : (normStatus === 'CANCELLED' ? 'badge-danger' : 'badge-info')}" style="margin-left:8px;">${normStatus.replace(/_/g, ' ')}</span>
+              </div>
+              <div><strong style="color:var(--success); font-size:15px;">₹${Number(o.totalAmount || 0).toFixed(2)} (${o.paymentMethod || 'COD'})</strong></div>
+            </div>
+            
+            <div class="order-info-row">
+              <strong>Customer Name:</strong> <span style="color:var(--text-main); font-weight:700;">${customerName}</span>
+            </div>
+            <div class="order-info-row">
+              <strong>Customer Phone:</strong> ${o.phone || 'N/A'}
+            </div>
+            <div class="order-info-row">
+              <strong>Pickup Restaurant:</strong> ${r.name || 'Restaurant'} (${r.address || 'Address N/A'})
+            </div>
+
+            ${['ACCEPTED', 'PREPARING', 'READY_FOR_PICKUP'].includes(normStatus) ? `
+              <button class="btn btn-maps" onclick="openRestaurantDirections(${restLat}, ${restLng}, '${restAddress}', '${restName}')">
+                🛵 Get Directions to Restaurant
+              </button>
+            ` : ''}
+
+            <div class="order-info-row" style="margin-top:8px;">
+              <strong>Delivery Address:</strong> ${o.address || 'Address N/A'}
+            </div>
+
+            <!-- CUSTOMER GPS NAVIGATION BUTTON (SHOWS AFTER PICKUP) -->
+            ${['PICKED_UP', 'OUT_FOR_DELIVERY'].includes(normStatus) ? `
+              <button class="btn btn-customer-maps" onclick="openCustomerDirections(${custLat}, ${custLng}, '${customerAddress}', '${customerName}')">
+                🗺️ Get Directions to Customer (Live GPS Route)
+              </button>
+            ` : ''}
+
+            ${['ACCEPTED', 'PREPARING', 'READY_FOR_PICKUP', 'PICKED_UP', 'OUT_FOR_DELIVERY'].includes(normStatus) ? `
+              <div style="margin-top:6px;">
+                <button class="btn btn-info btn-relative" style="margin-bottom:8px; width:100%;" onclick="openChatModal('${id}')">
+                  💬 Chat with Customer
+                  <span id="chat-badge-${id}" class="chat-badge hidden">0</span>
+                </button>
+              </div>
+            ` : ''}
+
+            <div>
+              ${['ACCEPTED', 'PREPARING', 'READY_FOR_PICKUP'].includes(normStatus) ? `
+                <button class="btn btn-info btn-large" onclick="openPickupOtpModal('${id}')">Verify Pickup OTP & Pickup Order</button>
+              ` : ''}
+              ${normStatus === 'PICKED_UP' ? `
+                <button class="btn btn-large" style="background:#f97316; color:white;" onclick="startOutForDelivery('${id}')">Start Out For Delivery 🛵</button>
+              ` : ''}
+              ${normStatus === 'OUT_FOR_DELIVERY' ? `
+                <button class="btn btn-success btn-large" style="margin-bottom:8px;" onclick="openOtpModal('${id}')">Complete Delivery (Verify Customer OTP)</button>
+                <button class="btn btn-danger btn-large" style="background:#ef4444;" onclick="openDeliveryIssueModal('${id}')">⚠️ Customer Issue / Unable to Deliver</button>
+              ` : ''}
+              ${normStatus === 'DELIVERED' ? `
+                <span class="badge badge-success" style="width:100%; text-align:center; padding:12px; font-size:12px;">DELIVERY COMPLETED</span>
+              ` : ''}
+            </div>
+          </div>
+        `;
+      }).join('');
+
+      window.updateAllChatBadges();
+    }
+
+    window.startOutForDelivery = async function(orderId) {
+      try {
+        const gps = window.state.currentGpsLocation || { lat: 0, lng: 0 };
+        
+        await update(ref(db, `orders/${orderId}`), { 
+          status: 'OUT_FOR_DELIVERY', 
+          updatedAt: Date.now() 
+        });
+
+        if (gps.lat && gps.lng) {
+          await update(ref(db, `orders/${orderId}/liveLocation`), {
+            lat: gps.lat,
+            lng: gps.lng,
+            isLive: true,
+            updatedAt: Date.now()
+          });
+        }
+
+        showToast("🚀 Order is OUT FOR DELIVERY! Live Tracking Shared with Customer.", "success");
+      } catch (err) {
+        showToast("Error: " + err.message, "danger");
+      }
+    };
+
+    window.toggleCustomDeliveryReasonInput = function(val) {
+      const box = document.getElementById('custom-delivery-reason-box');
+      if (val === 'OTHER') box.classList.remove('hidden');
+      else box.classList.add('hidden');
+    };
+
+    window.openDeliveryIssueModal = function(orderId) {
+      document.getElementById('issue-order-id').value = orderId;
+      document.getElementById('delivery-issue-modal').classList.remove('hidden');
+    };
+
+    window.submitDeliveryIssueCancellation = async function() {
+      const orderId = document.getElementById('issue-order-id').value;
+      const reasonSelect = document.getElementById('delivery-issue-reason-select').value;
+      let finalReason = reasonSelect === 'OTHER' ? document.getElementById('custom-delivery-reason-text').value.trim() : reasonSelect;
+
+      if (!finalReason) { showToast('Please enter the reason', 'danger'); return; }
+
+      try {
+        await update(ref(db, `orders/${orderId}`), {
+          status: 'CANCELLED',
+          cancelledBy: 'DELIVERY_PARTNER',
+          cancellationReason: finalReason,
+          updatedAt: Date.now()
+        });
+        closeModal('delivery-issue-modal');
+        showToast('Order marked as CANCELLED', 'success');
+      } catch (err) { showToast(err.message, 'danger'); }
+    };
+
+    window.openPickupOtpModal = function(orderId) {
+      document.getElementById('pickup-otp-order-id').value = orderId;
+      document.getElementById('pickup-otp-input').value = '';
+      document.getElementById('pickup-otp-modal').classList.remove('hidden');
+    };
+
+    window.verifyPickupOtp = async function() {
+      const orderId = document.getElementById('pickup-otp-order-id').value;
+      const inputOtp = document.getElementById('pickup-otp-input').value.trim();
+      const order = window.state.assignedOrders[orderId];
+
+      const expectedOtp = (order && order.pickupOtp) ? order.pickupOtp.toString().trim() : '';
+
+      if (!inputOtp || inputOtp !== expectedOtp) {
+        showToast('❌ Invalid Pickup OTP!', 'danger');
+        return;
+      }
+
+      try {
+        await update(ref(db, `orders/${orderId}`), { status: 'PICKED_UP', updatedAt: Date.now() });
+        closeModal('pickup-otp-modal');
+        showToast('✅ Order Picked Up Successfully!', 'success');
+      } catch (err) { showToast(err.message, 'danger'); }
+    };
+
+    window.openOtpModal = function(orderId) {
+      document.getElementById('otp-order-id').value = orderId;
+      document.getElementById('otp-input').value = '';
+      document.getElementById('otp-modal').classList.remove('hidden');
+    };
+
+    window.verifyOtpAndDeliver = async function() {
+      const orderId = document.getElementById('otp-order-id').value;
+      const inputOtp = document.getElementById('otp-input').value.trim();
+      const order = window.state.assignedOrders[orderId];
+
+      const expectedDeliveryOtp = (order && (order.deliveryOtp || order.otp)) ? (order.deliveryOtp || order.otp).toString().trim() : '';
+
+      if (!inputOtp || inputOtp !== expectedDeliveryOtp) { 
+        showToast('❌ Invalid Customer OTP!', 'danger'); 
+        return; 
+      }
+
+      try {
+        const delCharge = Number(order.deliveryCharge || 30);
+        const currentTotalEarnings = Number((window.state.partner && window.state.partner.earnings) || 0) + delCharge;
+
+        await update(ref(db, `orders/${orderId}`), { status: 'DELIVERED', updatedAt: Date.now() });
+        await update(ref(db, `deliveryPartners/${window.state.user.uid}`), { earnings: currentTotalEarnings, updatedAt: Date.now() });
+
+        closeModal('otp-modal');
+        document.getElementById('congrats-earned-amount').innerText = `+ ₹${delCharge.toFixed(2)}`;
+        document.getElementById('congrats-modal').classList.remove('hidden');
+      } catch (err) { showToast(err.message, 'danger'); }
+    };
+
+    window.openChatModal = function(orderId) {
+      window.state.activeChatOrderId = orderId;
+      document.getElementById('chat-modal').classList.remove('hidden');
+      window.markChatsAsRead(orderId);
+      renderChatMessages(orderId);
+    };
+
+    function renderChatMessages(orderId) {
+      const messagesContainer = document.getElementById('chat-messages');
+      const chats = (window.state.allChats && window.state.allChats[orderId]) ? window.state.allChats[orderId] : {};
+      messagesContainer.innerHTML = '';
+      Object.values(chats).forEach(msg => {
+        const isMe = msg.senderUid === window.state.user.uid;
+        messagesContainer.innerHTML += `<div class="chat-bubble ${isMe ? 'me' : 'other'}"><strong>${msg.senderName || 'User'}:</strong><br>${msg.text}</div>`;
+      });
+      messagesContainer.scrollTop = messagesContainer.scrollHeight;
+    }
+
+    window.sendChatMessage = async function() {
+      const input = document.getElementById('chat-input');
+      const text = input.value.trim();
+      const orderId = window.state.activeChatOrderId;
+      if (!text || !orderId) return;
+
+      try {
+        await set(push(ref(db, `chats/${orderId}`)), {
+          senderUid: window.state.user.uid,
+          senderName: (window.state.partner && window.state.partner.name) || "Delivery Partner",
+          text: text, timestamp: Date.now(), read: false
+        });
+        input.value = '';
+      } catch (err) { showToast(err.message, 'danger'); }
+    };
+
+    function calculateEarnings() {
+      const orders = Object.values(window.state.assignedOrders).filter(o => window.normalizeStatus(o.status) === 'DELIVERED');
+      const now = new Date();
+      let todayEarnings = 0, weeklyEarnings = 0, monthlyEarnings = 0;
+
+      orders.forEach(o => {
+        const fee = Number(o.deliveryCharge || 30);
+        if (o.createdAt) {
+          const orderDate = new Date(o.createdAt);
+          if (orderDate.toDateString() === now.toDateString()) todayEarnings += fee;
+          if ((now - orderDate) <= 7 * 24 * 60 * 60 * 1000) weeklyEarnings += fee;
+          if (orderDate.getMonth() === now.getMonth() && orderDate.getFullYear() === now.getFullYear()) monthlyEarnings += fee;
+        }
+      });
+
+      document.getElementById('stat-today-earnings').innerText = `₹${todayEarnings.toFixed(2)}`;
+      document.getElementById('stat-weekly-earnings').innerText = `₹${weeklyEarnings.toFixed(2)}`;
+      document.getElementById('stat-monthly-earnings').innerText = `₹${monthlyEarnings.toFixed(2)}`;
+    }
+
+    window.closeModal = function(id) { 
+      document.getElementById(id).classList.add('hidden'); 
+      if (id === 'chat-modal') window.state.activeChatOrderId = null;
+    };
+  </script>
+</body>
+</html>

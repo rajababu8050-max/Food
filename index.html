@@ -1,0 +1,72 @@
+<!DOCTYPE html>
+<html lang="hi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard Portal</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: Arial, sans-serif;
+        }
+        body {
+            background-color: #f4f6f9;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+        }
+        .container {
+            background: #ffffff;
+            padding: 30px;
+            border-radius: 12px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+            text-align: center;
+            max-width: 400px;
+            width: 100%;
+        }
+        h1 {
+            color: #333;
+            margin-bottom: 20px;
+        }
+        .nav-links {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+        .btn {
+            text-decoration: none;
+            color: white;
+            padding: 12px 20px;
+            border-radius: 6px;
+            font-weight: bold;
+            transition: background 0.3s ease;
+        }
+        .admin { background-color: #e74c3c; }
+        .customer { background-color: #2ecc71; }
+        .restaurant { background-color: #f39c12; }
+        .delivery { background-color: #3498db; }
+
+        .btn:hover {
+            opacity: 0.9;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="container">
+        <h1>Welcome Portal</h1>
+        <p style="margin-bottom: 20px; color: #666;">Kripya apna section chune:</p>
+        
+        <div class="nav-links">
+            <a href="admin.html" class="btn admin">Admin Portal</a>
+            <a href="customer.html" class="btn customer">Customer Portal</a>
+            <a href="restaurant.html" class="btn restaurant">Restaurant Portal</a>
+            <a href="delivery.html" class="btn delivery">Delivery Partner Portal</a>
+        </div>
+    </div>
+
+</body>
+</html>

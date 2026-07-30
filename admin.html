@@ -1,0 +1,2781 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Hunger Food - Executive Admin Panel</title>
+  <!-- Google Fonts & Chart.js CDN -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <!-- Lucide Icons CDN -->
+  <script src="https://unpkg.com/lucide@latest"></script>
+  <style>
+    :root {
+      --primary: #4f46e5;         /* Royal Indigo */
+      --primary-hover: #4338ca;
+      --primary-light: #eef2ff;
+      --primary-glow: rgba(79, 70, 229, 0.15);
+      
+      --bg-body: #f1f5f9;         /* Soft Light Slate */
+      --bg-sidebar: #ffffff;      /* Clean White Sidebar */
+      --bg-card: #ffffff;         /* Elevated Cards */
+      --bg-input: #f8fafc;        /* Control Inputs */
+      
+      --text-main: #0f172a;       /* Crisp Deep Slate */
+      --text-muted: #64748b;      /* Slate Neutral */
+      --border-color: #e2e8f0;    /* Smooth Border */
+      
+      --success: #10b981;
+      --warning: #f59e0b;
+      --danger: #ef4444;
+      --info: #3b82f6;
+
+      --radius-sm: 8px;
+      --radius-md: 12px;
+      --radius-lg: 18px;
+
+      --shadow-sm: 0 1px 3px rgba(0,0,0,0.03), 0 1px 2px rgba(0,0,0,0.02);
+      --shadow-md: 0 4px 12px -2px rgba(0,0,0,0.05), 0 2px 4px -1px rgba(0,0,0,0.03);
+      --shadow-lg: 0 12px 24px -4px rgba(0,0,0,0.08), 0 4px 8px -2px rgba(0,0,0,0.02);
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, sans-serif;
+    }
+
+    body {
+      background-color: var(--bg-body);
+      color: var(--text-main);
+      min-height: 100vh;
+      display: flex;
+      font-size: 14px;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    /* Helper Utilities */
+    .hidden { display: none !important; }
+    .flex-center { display: flex; align-items: center; justify-content: center; }
+
+    /* Page Initial Loader Overlay (Prevents Login Page Flickering) */
+    #page-loader {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100vw;
+      height: 100vh;
+      background: var(--bg-body);
+      z-index: 99999;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 16px;
+    }
+    .spinner {
+      width: 44px;
+      height: 44px;
+      border: 4px solid var(--border-color);
+      border-top-color: var(--primary);
+      border-radius: 50%;
+      animation: spin 0.8s linear infinite;
+    }
+    @keyframes spin {
+      to { transform: rotate(360deg); }
+    }
+
+    /* Toast Notification System */
+    #toast-container {
+      position: fixed;
+      top: 24px;
+      right: 24px;
+      z-index: 9999;
+    }
+    .toast {
+      background: #ffffff;
+      color: var(--text-main);
+      padding: 14px 20px;
+      margin-bottom: 10px;
+      border-radius: var(--radius-md);
+      border: 1px solid var(--border-color);
+      border-left: 5px solid var(--primary);
+      box-shadow: var(--shadow-lg);
+      font-weight: 600;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      animation: slideIn 0.3s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+    }
+    .toast.success { border-left-color: var(--success); }
+    .toast.danger { border-left-color: var(--danger); }
+    .toast.warning { border-left-color: var(--warning); }
+    @keyframes slideIn {
+      from { transform: translateX(100%); opacity: 0; }
+      to { transform: translateX(0); opacity: 1; }
+    }
+
+    /* Auth View */
+    #auth-view {
+      width: 100vw;
+      height: 100vh;
+      background: radial-gradient(circle at top right, rgba(79, 70, 229, 0.08), transparent 50%), var(--bg-body);
+      display: flex;
+      justify-content: center;
+      align-items: center;
+    }
+    .login-card {
+      background: var(--bg-card);
+      padding: 44px 38px;
+      border-radius: var(--radius-lg);
+      width: 100%;
+      max-width: 420px;
+      box-shadow: var(--shadow-lg);
+      border: 1px solid var(--border-color);
+    }
+    .login-card .brand-header {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 10px;
+      margin-bottom: 24px;
+    }
+    .login-card h2 {
+      text-align: center;
+      font-size: 22px;
+      color: var(--text-main);
+      font-weight: 800;
+      letter-spacing: -0.5px;
+    }
+    .login-card h2 span { color: var(--primary); }
+    .form-group { margin-bottom: 20px; }
+    .form-group label {
+      display: block;
+      margin-bottom: 8px;
+      color: var(--text-muted);
+      font-size: 13px;
+      font-weight: 600;
+    }
+    .form-control {
+      width: 100%;
+      padding: 12px 16px;
+      border-radius: var(--radius-sm);
+      border: 1px solid var(--border-color);
+      background: var(--bg-input);
+      color: var(--text-main);
+      font-size: 14px;
+      outline: none;
+      transition: all 0.2s ease;
+      font-weight: 500;
+    }
+    .form-control:focus {
+      background: #ffffff;
+      border-color: var(--primary);
+      box-shadow: 0 0 0 4px var(--primary-glow);
+    }
+    .btn {
+      padding: 11px 20px;
+      border-radius: var(--radius-sm);
+      border: none;
+      cursor: pointer;
+      font-weight: 700;
+      font-size: 13px;
+      transition: all 0.2s ease;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+    }
+    .btn-primary { background: var(--primary); color: white; width: 100%; }
+    .btn-primary:hover { background: var(--primary-hover); transform: translateY(-1px); box-shadow: 0 4px 12px var(--primary-glow); }
+    .btn-sm { padding: 8px 14px; font-size: 12px; }
+    .btn-success { background: var(--success); color: white; }
+    .btn-success:hover { opacity: 0.95; }
+    .btn-danger { background: var(--danger); color: white; }
+    .btn-danger:hover { opacity: 0.95; }
+    .btn-warning { background: var(--warning); color: #ffffff; }
+    .btn-info { background: var(--info); color: white; }
+
+    /* Admin Dashboard Layout */
+    #dashboard-view {
+      display: flex;
+      width: 100%;
+      min-height: 100vh;
+    }
+    .sidebar {
+      width: 270px;
+      background: var(--bg-sidebar);
+      border-right: 1px solid var(--border-color);
+      display: flex;
+      flex-direction: column;
+      transition: all 0.3s;
+    }
+    .sidebar-header {
+      padding: 24px 22px;
+      font-size: 19px;
+      font-weight: 800;
+      color: var(--text-main);
+      border-bottom: 1px solid var(--border-color);
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+    .sidebar-header .brand-icon {
+      width: 36px;
+      height: 36px;
+      background: var(--primary-light);
+      color: var(--primary);
+      border-radius: 10px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .sidebar-menu {
+      list-style: none;
+      padding: 20px 14px;
+      flex: 1;
+      overflow-y: auto;
+    }
+    .sidebar-menu li {
+      padding: 12px 16px;
+      color: var(--text-muted);
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      border-radius: var(--radius-sm);
+      margin-bottom: 6px;
+      font-weight: 600;
+      transition: all 0.2s ease;
+      position: relative;
+    }
+    .sidebar-menu li i {
+      width: 20px;
+      height: 20px;
+      transition: transform 0.2s ease;
+    }
+    .sidebar-menu li:hover {
+      background: var(--bg-body);
+      color: var(--text-main);
+    }
+    .sidebar-menu li:hover i {
+      transform: translateX(2px);
+    }
+    .sidebar-menu li.active {
+      background: var(--primary);
+      color: #ffffff;
+      box-shadow: 0 4px 14px var(--primary-glow);
+    }
+    .sidebar-menu li.active i {
+      color: #ffffff;
+    }
+    .sidebar-footer {
+      padding: 20px 14px;
+      border-top: 1px solid var(--border-color);
+    }
+
+    .main-content {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      overflow-y: auto;
+      background: var(--bg-body);
+    }
+    .topbar {
+      height: 72px;
+      background: var(--bg-card);
+      border-bottom: 1px solid var(--border-color);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0 32px;
+      position: sticky;
+      top: 0;
+      z-index: 10;
+    }
+    .topbar-title { font-size: 20px; font-weight: 800; letter-spacing: -0.4px; color: var(--text-main); display: flex; align-items: center; gap: 10px; }
+    
+    .topbar-actions {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+    }
+
+    /* TOPBAR NOTIFICATION BELL & RED DOT STYLING */
+    .notif-bell-container {
+      position: relative;
+      cursor: pointer;
+    }
+    .notif-bell-btn {
+      width: 42px;
+      height: 42px;
+      border-radius: 50%;
+      background: var(--bg-body);
+      border: 1px solid var(--border-color);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: var(--text-main);
+      transition: all 0.2s ease;
+      position: relative;
+    }
+    .notif-bell-btn:hover {
+      background: var(--primary-light);
+      color: var(--primary);
+    }
+    .notif-red-dot {
+      position: absolute;
+      top: 2px;
+      right: 2px;
+      width: 12px;
+      height: 12px;
+      background-color: var(--danger);
+      border: 2px solid #ffffff;
+      border-radius: 50%;
+      animation: pulse 1.5s infinite;
+    }
+    @keyframes pulse {
+      0% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.7); }
+      70% { box-shadow: 0 0 0 6px rgba(239, 68, 68, 0); }
+      100% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0); }
+    }
+
+    /* NOTIFICATION DROPDOWN POPUP */
+    .notif-dropdown {
+      position: absolute;
+      top: 52px;
+      right: 0;
+      width: 360px;
+      background: var(--bg-card);
+      border-radius: var(--radius-md);
+      border: 1px solid var(--border-color);
+      box-shadow: var(--shadow-lg);
+      z-index: 100;
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+    }
+    .notif-dropdown-header {
+      padding: 14px 16px;
+      border-bottom: 1px solid var(--border-color);
+      font-weight: 800;
+      font-size: 14px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      background: #f8fafc;
+    }
+    .notif-dropdown-body {
+      max-height: 320px;
+      overflow-y: auto;
+    }
+    .notif-item {
+      padding: 12px 16px;
+      border-bottom: 1px solid var(--border-color);
+      cursor: pointer;
+      transition: background 0.2s;
+    }
+    .notif-item:hover {
+      background: var(--bg-body);
+    }
+    .notif-item.unread {
+      background: #eef2ff;
+    }
+
+    .topbar-user { 
+      font-size: 13px; 
+      color: var(--text-main); 
+      background: var(--bg-body);
+      padding: 8px 16px;
+      border-radius: 30px;
+      border: 1px solid var(--border-color);
+      font-weight: 700;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .content-area {
+      padding: 32px;
+      flex: 1;
+    }
+
+    .stats-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(210px, 1fr));
+      gap: 20px;
+      margin-bottom: 32px;
+    }
+    .stat-card {
+      background: var(--bg-card);
+      border-radius: var(--radius-md);
+      padding: 22px;
+      border: 1px solid var(--border-color);
+      box-shadow: var(--shadow-sm);
+      transition: all 0.25s ease;
+      position: relative;
+      overflow: hidden;
+    }
+    .stat-card:hover {
+      border-color: rgba(79, 70, 229, 0.4);
+      box-shadow: var(--shadow-md);
+      transform: translateY(-3px);
+    }
+    .stat-card .card-header-flex {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 12px;
+    }
+    .stat-card h4 { font-size: 12px; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.6px; font-weight: 700; }
+    .stat-card .stat-icon {
+      width: 42px;
+      height: 42px;
+      border-radius: 12px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: var(--primary-light);
+      color: var(--primary);
+    }
+    .stat-card .value { font-size: 28px; font-weight: 800; color: var(--text-main); letter-spacing: -0.6px; }
+
+    .controls-bar {
+      display: flex;
+      gap: 12px;
+      margin-bottom: 24px;
+      flex-wrap: wrap;
+      align-items: center;
+    }
+    .controls-bar input[type="text"], .controls-bar select {
+      max-width: 280px;
+      background: #ffffff;
+    }
+
+    .table-container {
+      background: var(--bg-card);
+      border-radius: var(--radius-md);
+      border: 1px solid var(--border-color);
+      overflow-x: auto;
+      box-shadow: var(--shadow-sm);
+      margin-bottom: 24px;
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      text-align: left;
+    }
+    th, td {
+      padding: 16px 20px;
+      border-bottom: 1px solid var(--border-color);
+      font-size: 13.5px;
+    }
+    th {
+      background: #f8fafc;
+      color: var(--text-muted);
+      font-weight: 700;
+      text-transform: uppercase;
+      font-size: 11px;
+      letter-spacing: 0.7px;
+    }
+    tr:last-child td { border-bottom: none; }
+    tr:hover { background: #f8fafc; }
+
+    .badge {
+      padding: 6px 12px;
+      border-radius: 30px;
+      font-size: 11px;
+      font-weight: 700;
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      letter-spacing: 0.3px;
+    }
+    .badge-success { background: #d1fae5; color: #047857; border: 1px solid #a7f3d0; }
+    .badge-warning { background: #fef3c7; color: #b45309; border: 1px solid #fde68a; }
+    .badge-danger { background: #fee2e2; color: #b91c1c; border: 1px solid #fca5a5; }
+    .badge-info { background: #dbeafe; color: #1d4ed8; border: 1px solid #bfdbfe; }
+
+    .pagination-container {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 16px 20px;
+      background: var(--bg-card);
+      border-top: 1px solid var(--border-color);
+      border-bottom-left-radius: var(--radius-md);
+      border-bottom-right-radius: var(--radius-md);
+      font-size: 13px;
+      color: var(--text-muted);
+      font-weight: 600;
+    }
+    .pagination-buttons {
+      display: flex;
+      gap: 6px;
+      align-items: center;
+    }
+    .page-btn {
+      padding: 7px 14px;
+      border-radius: var(--radius-sm);
+      background: #ffffff;
+      border: 1px solid var(--border-color);
+      color: var(--text-main);
+      cursor: pointer;
+      font-size: 12px;
+      font-weight: 700;
+      transition: all 0.2s ease;
+    }
+    .page-btn:hover:not(:disabled) {
+      background: var(--primary);
+      border-color: var(--primary);
+      color: white;
+      box-shadow: 0 2px 8px var(--primary-glow);
+    }
+    .page-btn.active {
+      background: var(--primary);
+      border-color: var(--primary);
+      color: white;
+    }
+    .page-btn:disabled {
+      opacity: 0.4;
+      cursor: not-allowed;
+    }
+
+    .modal {
+      position: fixed;
+      top: 0; left: 0; width: 100vw; height: 100vh;
+      background: rgba(15, 23, 42, 0.4);
+      backdrop-filter: blur(5px);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 1000;
+    }
+    .modal-content {
+      background: var(--bg-card);
+      border-radius: var(--radius-lg);
+      padding: 32px;
+      width: 100%;
+      max-width: 480px;
+      border: 1px solid var(--border-color);
+      box-shadow: var(--shadow-lg);
+    }
+    .modal-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 24px;
+    }
+    .modal-header h3 { font-size: 18px; font-weight: 800; color: var(--text-main); }
+    .modal-close {
+      cursor: pointer;
+      font-size: 20px;
+      color: var(--text-muted);
+      transition: color 0.2s;
+    }
+    .modal-close:hover { color: var(--text-main); }
+
+    .charts-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(400px, 1fr));
+      gap: 24px;
+      margin-top: 24px;
+    }
+    .chart-card {
+      background: var(--bg-card);
+      padding: 24px;
+      border-radius: var(--radius-md);
+      border: 1px solid var(--border-color);
+      box-shadow: var(--shadow-sm);
+    }
+    .chart-card h4 {
+      font-size: 14px;
+      font-weight: 700;
+      color: var(--text-main);
+      margin-bottom: 20px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .banner-preview-img {
+      width: 100px;
+      height: 50px;
+      object-fit: cover;
+      border-radius: var(--radius-sm);
+      border: 1px solid var(--border-color);
+    }
+
+    /* RATING SYSTEM CARDS IN ADMIN */
+    .rating-rider-card {
+      background: var(--bg-card);
+      border-radius: var(--radius-md);
+      border: 1px solid var(--border-color);
+      padding: 20px;
+      margin-bottom: 16px;
+      box-shadow: var(--shadow-sm);
+    }
+    .rating-star-badge {
+      background: #fef3c7;
+      color: #b45309;
+      padding: 4px 10px;
+      border-radius: 20px;
+      font-weight: 800;
+      font-size: 13px;
+    }
+
+    /* SUB TAB BUTTONS FOR RATINGS SECTION */
+    .sub-tab-btn {
+      padding: 10px 18px;
+      background: var(--bg-card);
+      border: 1px solid var(--border-color);
+      border-radius: var(--radius-sm);
+      font-weight: 700;
+      font-size: 13px;
+      color: var(--text-muted);
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+    .sub-tab-btn.active {
+      background: var(--primary);
+      color: white;
+      border-color: var(--primary);
+    }
+
+    @media (max-width: 768px) {
+      .sidebar { position: fixed; left: -270px; height: 100%; z-index: 99; }
+      .sidebar.open { left: 0; }
+      .charts-grid { grid-template-columns: 1fr; }
+      .content-area { padding: 20px; }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Full-Page Loading Overlay (Hides screen until Auth State is verified) -->
+  <div id="page-loader">
+    <div class="spinner"></div>
+    <div style="font-weight: 700; color: var(--text-muted); font-size: 14px;">Verifying Admin Access...</div>
+  </div>
+
+  <!-- Toast Container -->
+  <div id="toast-container"></div>
+
+  <!-- AUTHENTICATION VIEW (Hidden by default to prevent flicker) -->
+  <div id="auth-view" class="hidden">
+    <div class="login-card">
+      <div class="brand-header">
+        <i data-lucide="utensils-crossed" style="width: 32px; height: 32px; color: var(--primary);"></i>
+        <h2>Hunger Food <span>Admin</span></h2>
+      </div>
+      <form id="admin-login-form">
+        <div class="form-group">
+          <label>Admin Email</label>
+          <input type="email" id="login-email" class="form-control" required placeholder="admin@hungerfood.com">
+        </div>
+        <div class="form-group">
+          <label>Password</label>
+          <input type="password" id="login-password" class="form-control" required placeholder="••••••••">
+        </div>
+        <button type="submit" class="btn btn-primary">
+          <i data-lucide="log-in" style="width: 18px; height: 18px;"></i> Login to Dashboard
+        </button>
+      </form>
+    </div>
+  </div>
+
+  <!-- DASHBOARD VIEW -->
+  <div id="dashboard-view" class="hidden">
+    <!-- Sidebar -->
+    <aside class="sidebar" id="sidebar">
+      <div class="sidebar-header">
+        <div class="brand-icon">
+          <i data-lucide="chef-hat" style="width: 22px; height: 22px;"></i>
+        </div>
+        <span>Hunger Food</span>
+      </div>
+      <ul class="sidebar-menu">
+        <li class="active" onclick="switchTab('dashboard')">
+          <i data-lucide="layout-dashboard"></i> Dashboard
+        </li>
+        <li onclick="switchTab('financials')">
+          <i data-lucide="wallet"></i> Financial Settlements
+        </li>
+        <li onclick="switchTab('banners')">
+          <i data-lucide="image"></i> Homepage Banners
+        </li>
+        <li onclick="switchTab('restaurants')">
+          <i data-lucide="store"></i> Restaurants
+        </li>
+        <li onclick="switchTab('delivery')">
+          <i data-lucide="bike"></i> Delivery Partners
+        </li>
+        <li onclick="switchTab('ratings')">
+          <i data-lucide="star"></i> Ratings & Reviews
+        </li>
+        <li onclick="switchTab('customers')">
+          <i data-lucide="users"></i> Customers
+        </li>
+        <li onclick="switchTab('orders')">
+          <i data-lucide="shopping-bag"></i> Orders
+        </li>
+        <li onclick="switchTab('coupons')">
+          <i data-lucide="ticket"></i> Coupons
+        </li>
+        <li onclick="switchTab('reports')">
+          <i data-lucide="bar-chart-3"></i> Reports & Analytics
+        </li>
+        <li onclick="switchTab('notifications')">
+          <i data-lucide="bell"></i> Notifications
+        </li>
+      </ul>
+      <div class="sidebar-footer">
+        <button class="btn btn-danger btn-sm" style="width: 100%;" onclick="logoutAdmin()">
+          <i data-lucide="log-out" style="width: 16px; height: 16px;"></i> Logout Account
+        </button>
+      </div>
+    </aside>
+
+    <!-- Main Content Panel -->
+    <main class="main-content">
+      <div class="topbar">
+        <div class="topbar-title" id="topbar-title">
+          <i data-lucide="layout-dashboard" style="width: 22px; height: 22px; color: var(--primary);"></i> Dashboard Overview
+        </div>
+        
+        <div class="topbar-actions">
+          <!-- 🔥 FACTORY SYSTEM RESET BUTTON -->
+          <button class="btn btn-danger btn-sm" style="background:#dc2626; font-weight:800; border-radius:30px; padding:8px 16px;" onclick="resetAllSystemData()">
+            <i data-lucide="refresh-cw" style="width: 16px; height: 16px;"></i> 🔥 Factory Reset System
+          </button>
+
+          <!-- TOPBAR NOTIFICATION BELL WITH RED DOT -->
+          <div class="notif-bell-container">
+            <div class="notif-bell-btn" onclick="toggleNotifDropdown()">
+              <i data-lucide="bell" style="width: 20px; height: 20px;"></i>
+              <div id="notif-red-dot" class="notif-red-dot hidden"></div>
+            </div>
+
+            <!-- NOTIFICATION DROPDOWN MENU -->
+            <div id="notif-dropdown" class="notif-dropdown hidden">
+              <div class="notif-dropdown-header">
+                <span>Pending Approvals</span>
+                <span id="notif-count-badge" class="badge badge-danger">0 New</span>
+              </div>
+              <div id="notif-dropdown-body" class="notif-dropdown-body">
+                <div style="padding:16px; text-align:center; color:var(--text-muted);">No pending applications.</div>
+              </div>
+            </div>
+          </div>
+
+          <div class="topbar-user" id="admin-user-display">
+            <i data-lucide="shield-check" style="width: 18px; height: 18px; color: var(--primary);"></i> Admin Account
+          </div>
+        </div>
+      </div>
+
+      <div class="content-area">
+        <!-- 1. DASHBOARD OVERVIEW PANEL -->
+        <section id="panel-dashboard">
+          <div class="stats-grid">
+            <div class="stat-card">
+              <div class="card-header-flex">
+                <h4>Total Orders</h4>
+                <div class="stat-icon"><i data-lucide="shopping-cart"></i></div>
+              </div>
+              <div class="value" id="stat-total-orders">0</div>
+            </div>
+            <div class="stat-card">
+              <div class="card-header-flex">
+                <h4>Total COD Revenue</h4>
+                <div class="stat-icon" style="background:#d1fae5; color:#047857;"><i data-lucide="indian-rupee"></i></div>
+              </div>
+              <div class="value" id="stat-total-revenue">₹0.00</div>
+            </div>
+            <div class="stat-card">
+              <div class="card-header-flex">
+                <h4>Restaurants</h4>
+                <div class="stat-icon" style="background:#fef3c7; color:#b45309;"><i data-lucide="utensils"></i></div>
+              </div>
+              <div class="value" id="stat-total-restaurants">0</div>
+            </div>
+            <div class="stat-card">
+              <div class="card-header-flex">
+                <h4>Customers</h4>
+                <div class="stat-icon" style="background:#dbeafe; color:#1d4ed8;"><i data-lucide="user-check"></i></div>
+              </div>
+              <div class="value" id="stat-total-customers">0</div>
+            </div>
+            <div class="stat-card">
+              <div class="card-header-flex">
+                <h4>Delivery Partners</h4>
+                <div class="stat-icon" style="background:#f3e8ff; color:#7e22ce;"><i data-lucide="truck"></i></div>
+              </div>
+              <div class="value" id="stat-total-delivery">0</div>
+            </div>
+          </div>
+          <h3 style="font-size: 16px; font-weight: 800; margin-bottom: 16px; display: flex; align-items: center; gap: 8px;">
+            <i data-lucide="clock" style="width: 20px; height: 20px; color: var(--primary);"></i> Recent Orders
+          </h3>
+          <div class="table-container">
+            <table>
+              <thead>
+                <tr>
+                  <th>Order Number</th>
+                  <th>Subtotal</th>
+                  <th>Tax & Delivery</th>
+                  <th>Total</th>
+                  <th>Status</th>
+                  <th>Created At</th>
+                </tr>
+              </thead>
+              <tbody id="dashboard-orders-tbody">
+                <tr><td colspan="6" style="text-align:center; color:var(--text-muted);">Loading orders...</td></tr>
+              </tbody>
+            </table>
+            <div class="pagination-container" id="dash-pagination"></div>
+          </div>
+        </section>
+
+        <!-- 2. FINANCIAL SETTLEMENTS & PAYOUTS PANEL -->
+        <section id="panel-financials" class="hidden">
+          <div style="margin-bottom: 24px;">
+            <h3 style="font-size: 18px; font-weight: 800; display: flex; align-items: center; gap: 10px;">
+              <i data-lucide="wallet" style="width: 22px; height: 22px; color: var(--primary);"></i> Financial Settlements & Payouts
+            </h3>
+            <p style="color: var(--text-muted); font-size: 13px; margin-top: 4px;">Calculate pending balances and clear payouts for partner restaurants and delivery partners.</p>
+          </div>
+
+          <!-- RESTAURANTS SETTLEMENTS TABLE -->
+          <div style="margin-bottom: 32px;">
+            <h4 style="font-size: 15px; font-weight: 700; margin-bottom: 12px; color: var(--text-main);">🏬 Restaurant Payout Settlements</h4>
+            <div class="table-container">
+              <table>
+                <thead>
+                  <tr>
+                    <th>Restaurant Name</th>
+                    <th>Delivered Orders</th>
+                    <th>Total Sales (₹)</th>
+                    <th>Pending Payout (₹)</th>
+                    <th>Action</th>
+                  </tr>
+                </thead>
+                <tbody id="restaurant-settlement-tbody">
+                  <tr><td colspan="5" style="text-align:center; color:var(--text-muted);">Loading restaurant payouts...</td></tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+          <!-- DELIVERY PARTNER SETTLEMENTS TABLE -->
+          <div>
+            <h4 style="font-size: 15px; font-weight: 700; margin-bottom: 12px; color: var(--text-main);">🛵 Delivery Partner Settlements</h4>
+            <div class="table-container">
+              <table>
+                <thead>
+                  <tr>
+                    <th>Rider Name</th>
+                    <th>Delivery Earnings (₹)</th>
+                    <th>COD Cash in Hand (₹)</th>
+                    <th>Net Balance Status</th>
+                    <th>Action</th>
+                  </tr>
+                </thead>
+                <tbody id="rider-settlement-tbody">
+                  <tr><td colspan="5" style="text-align:center; color:var(--text-muted);">Loading delivery partner payouts...</td></tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </section>
+
+        <!-- 3. HOMEPAGE BANNERS MANAGEMENT SECTION -->
+        <section id="panel-banners" class="hidden">
+          <div style="margin-bottom: 24px; display: flex; justify-content: space-between; align-items: center;">
+            <button class="btn btn-primary" style="width: auto;" onclick="openBannerModal()">
+              <i data-lucide="plus-circle" style="width: 18px; height: 18px;"></i> Add New Banner
+            </button>
+          </div>
+          <div class="table-container">
+            <table>
+              <thead>
+                <tr>
+                  <th>Preview</th>
+                  <th>Title</th>
+                  <th>Offer / Subtitle</th>
+                  <th>Status</th>
+                  <th>Actions</th>
+                </tr>
+              </thead>
+              <tbody id="banners-tbody">
+                <tr><td colspan="5" style="text-align:center; color:var(--text-muted);">Loading banners...</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </section>
+
+        <!-- 4. RESTAURANTS APPROVAL, LIST & BULK DELETE -->
+        <section id="panel-restaurants" class="hidden">
+          <div class="controls-bar">
+            <input type="text" id="restaurant-search" class="form-control" placeholder="🔍 Search restaurant by name or ID..." oninput="currentPage.restaurants=1; renderRestaurants()">
+            <select id="restaurant-filter" class="form-control" onchange="currentPage.restaurants=1; renderRestaurants()">
+              <option value="ALL">All Approval Status</option>
+              <option value="PENDING">Pending Approval</option>
+              <option value="APPROVED">Approved</option>
+            </select>
+
+            <button class="btn btn-danger btn-sm" onclick="deleteSelectedRestaurants()">
+              <i data-lucide="trash-2" style="width: 15px; height: 15px;"></i> Delete Selected
+            </button>
+            <button class="btn btn-danger btn-sm" style="background:#b91c1c;" onclick="deleteAllRestaurants()">
+              <i data-lucide="flame" style="width: 15px; height: 15px;"></i> Delete ALL Restaurants
+            </button>
+          </div>
+
+          <div class="table-container">
+            <table>
+              <thead>
+                <tr>
+                  <th style="width: 40px; text-align: center;">
+                    <input type="checkbox" id="select-all-restaurants" onchange="toggleSelectAllRestaurants(this)">
+                  </th>
+                  <th>Restaurant ID</th>
+                  <th>Name</th>
+                  <th>Rating</th>
+                  <th>Email</th>
+                  <th>Cuisine</th>
+                  <th>Address</th>
+                  <th>Approval Status</th>
+                  <th>Actions</th>
+                </tr>
+              </thead>
+              <tbody id="restaurants-tbody"></tbody>
+            </table>
+            <div class="pagination-container" id="restaurants-pagination"></div>
+          </div>
+        </section>
+
+        <!-- 5. DELIVERY PARTNER APPROVAL, LIST & RATING -->
+        <section id="panel-delivery" class="hidden">
+          <div class="controls-bar">
+            <input type="text" id="delivery-search" class="form-control" placeholder="🔍 Search partner by name, phone or ID..." oninput="currentPage.delivery=1; renderDeliveryPartners()">
+            <select id="delivery-filter" class="form-control" onchange="currentPage.delivery=1; renderDeliveryPartners()">
+              <option value="ALL">All Status</option>
+              <option value="PENDING">Pending</option>
+              <option value="APPROVED">Approved</option>
+            </select>
+
+            <button class="btn btn-danger btn-sm" onclick="deleteSelectedDeliveryPartners()">
+              <i data-lucide="trash-2" style="width: 15px; height: 15px;"></i> Delete Selected
+            </button>
+            <button class="btn btn-danger btn-sm" style="background:#b91c1c;" onclick="deleteAllDeliveryPartners()">
+              <i data-lucide="flame" style="width: 15px; height: 15px;"></i> Delete ALL Partners
+            </button>
+          </div>
+
+          <div class="table-container">
+            <table>
+              <thead>
+                <tr>
+                  <th style="width: 40px; text-align: center;">
+                    <input type="checkbox" id="select-all-delivery" onchange="toggleSelectAllDelivery(this)">
+                  </th>
+                  <th>Partner ID</th>
+                  <th>Name</th>
+                  <th>Email</th>
+                  <th>Phone</th>
+                  <th>Rating</th>
+                  <th>Vehicle</th>
+                  <th>Approved</th>
+                  <th>Online</th>
+                  <th>Earnings</th>
+                  <th>Actions</th>
+                </tr>
+              </thead>
+              <tbody id="delivery-tbody"></tbody>
+            </table>
+            <div class="pagination-container" id="delivery-pagination"></div>
+          </div>
+        </section>
+
+        <!-- 6. RATINGS & REVIEWS SECTION (DELIVERY & RESTAURANT FEEDBACK) -->
+        <section id="panel-ratings" class="hidden">
+          <div style="margin-bottom: 20px;">
+            <h3 style="font-size: 18px; font-weight: 800; display: flex; align-items: center; gap: 10px;">
+              <i data-lucide="star" style="width: 22px; height: 22px; color: var(--warning);"></i> Customer Ratings & Feedback
+            </h3>
+            <p style="color: var(--text-muted); font-size: 13px; margin-top: 4px;">Monitor performance and feedback for both delivery partners and partner restaurants.</p>
+          </div>
+
+          <!-- SUB TABS SWITCHER -->
+          <div style="display:flex; gap:10px; margin-bottom:20px;">
+            <button class="sub-tab-btn active" id="subtab-rider-btn" onclick="switchRatingSubTab('RIDER')">
+              🛵 Delivery Partner Ratings
+            </button>
+            <button class="sub-tab-btn" id="subtab-restaurant-btn" onclick="switchRatingSubTab('RESTAURANT')">
+              🏬 Restaurant Ratings & Reviews
+            </button>
+          </div>
+
+          <!-- RIDER RATINGS CONTAINER -->
+          <div id="ratings-riders-container">
+            <p style="text-align:center; color:var(--text-muted); padding:20px;">Loading rider ratings...</p>
+          </div>
+
+          <!-- RESTAURANT RATINGS CONTAINER -->
+          <div id="ratings-restaurants-container" class="hidden">
+            <p style="text-align:center; color:var(--text-muted); padding:20px;">Loading restaurant reviews...</p>
+          </div>
+        </section>
+
+        <!-- 7. CUSTOMERS LIST WITH ID, SELECT ALL, BLOCK & BULK DELETE -->
+        <section id="panel-customers" class="hidden">
+          <div class="controls-bar">
+            <input type="text" id="customer-search" class="form-control" placeholder="🔍 Search customer by ID, name or phone..." oninput="currentPage.customers=1; renderCustomers()">
+            <select id="customer-filter" class="form-control" onchange="currentPage.customers=1; renderCustomers()">
+              <option value="ALL">All Status</option>
+              <option value="ACTIVE">Active Users</option>
+              <option value="BLOCKED">Blocked Users</option>
+            </select>
+
+            <button class="btn btn-warning btn-sm" style="background:#f59e0b;" onclick="blockSelectedCustomers()">
+              <i data-lucide="ban" style="width: 15px; height: 15px;"></i> Block Selected
+            </button>
+            <button class="btn btn-danger btn-sm" onclick="deleteSelectedCustomers()">
+              <i data-lucide="trash-2" style="width: 15px; height: 15px;"></i> Delete Selected
+            </button>
+            <button class="btn btn-danger btn-sm" style="background:#b91c1c;" onclick="deleteAllCustomers()">
+              <i data-lucide="flame" style="width: 15px; height: 15px;"></i> Delete ALL Customers
+            </button>
+          </div>
+          <div class="table-container">
+            <table>
+              <thead>
+                <tr>
+                  <th style="width: 40px; text-align: center;">
+                    <input type="checkbox" id="select-all-customers" onchange="toggleSelectAllCustomers(this)">
+                  </th>
+                  <th>Customer ID</th>
+                  <th>Name</th>
+                  <th>Email</th>
+                  <th>Phone</th>
+                  <th>Address</th>
+                  <th>Status</th>
+                  <th>Registered Date</th>
+                  <th>Actions</th>
+                </tr>
+              </thead>
+              <tbody id="customers-tbody"></tbody>
+            </table>
+            <div class="pagination-container" id="customers-pagination"></div>
+          </div>
+        </section>
+
+        <!-- 8. ORDERS MANAGEMENT -->
+        <section id="panel-orders" class="hidden">
+          <div class="controls-bar">
+            <input type="text" id="order-search" class="form-control" placeholder="🔍 Search Order ID..." oninput="currentPage.orders=1; renderOrders()">
+            <select id="order-filter" class="form-control" onchange="currentPage.orders=1; renderOrders()">
+              <option value="ALL">All Statuses</option>
+              <option value="PLACED">PLACED</option>
+              <option value="ACCEPTED">ACCEPTED</option>
+              <option value="PREPARING">PREPARING</option>
+              <option value="READY_FOR_PICKUP">READY_FOR_PICKUP</option>
+              <option value="PICKED_UP">PICKED_UP</option>
+              <option value="OUT_FOR_DELIVERY">OUT_FOR_DELIVERY</option>
+              <option value="DELIVERED">DELIVERED</option>
+              <option value="CANCELLED">CANCELLED</option>
+            </select>
+
+            <button class="btn btn-danger btn-sm" onclick="deleteSelectedOrders()">
+              <i data-lucide="trash-2" style="width: 15px; height: 15px;"></i> Delete Selected
+            </button>
+            <button class="btn btn-danger btn-sm" style="background:#b91c1c;" onclick="deleteAllOrders()">
+              <i data-lucide="flame" style="width: 15px; height: 15px;"></i> Delete ALL Orders
+            </button>
+          </div>
+
+          <div class="table-container">
+            <table>
+              <thead>
+                <tr>
+                  <th style="width: 40px; text-align: center;">
+                    <input type="checkbox" id="select-all-orders" onchange="toggleSelectAllOrders(this)">
+                  </th>
+                  <th>Order #</th>
+                  <th>Customer UID</th>
+                  <th>Restaurant ID</th>
+                  <th>Total Amount</th>
+                  <th>Status</th>
+                  <th>Assigned Partner (Auto)</th>
+                  <th>Actions</th>
+                </tr>
+              </thead>
+              <tbody id="orders-tbody"></tbody>
+            </table>
+            <div class="pagination-container" id="orders-pagination"></div>
+          </div>
+        </section>
+
+        <!-- 9. COUPON MANAGEMENT -->
+        <section id="panel-coupons" class="hidden">
+          <div style="margin-bottom: 24px;">
+            <button class="btn btn-primary" style="width: auto;" onclick="openCouponModal()">
+              <i data-lucide="plus-circle" style="width: 18px; height: 18px;"></i> Create New Coupon
+            </button>
+          </div>
+          <div class="table-container">
+            <table>
+              <thead>
+                <tr>
+                  <th>Code</th>
+                  <th>Discount Amount (₹)</th>
+                  <th>Active</th>
+                  <th>Expiry Date</th>
+                  <th>Actions</th>
+                </tr>
+              </thead>
+              <tbody id="coupons-tbody"></tbody>
+            </table>
+          </div>
+        </section>
+
+        <!-- 10. REPORTS & ANALYTICS -->
+        <section id="panel-reports" class="hidden">
+          <h3 style="font-size: 16px; font-weight: 800; margin-bottom: 16px; display: flex; align-items: center; gap: 8px;">
+            <i data-lucide="trending-up" style="width: 20px; height: 20px; color: var(--primary);"></i> Business Performance Reports
+          </h3>
+          <div class="charts-grid">
+            <div class="chart-card">
+              <h4><i data-lucide="bar-chart-2" style="width: 18px; height: 18px; color: var(--primary);"></i> Daily Orders Count</h4>
+              <canvas id="chart-daily-orders"></canvas>
+            </div>
+            <div class="chart-card">
+              <h4><i data-lucide="line-chart" style="width: 18px; height: 18px; color: var(--success);"></i> Revenue Analytics (₹)</h4>
+              <canvas id="chart-revenue"></canvas>
+            </div>
+          </div>
+        </section>
+
+        <!-- 11. ADMIN NOTIFICATIONS -->
+        <section id="panel-notifications" class="hidden">
+          <div class="login-card" style="max-width: 580px; margin: 0 auto 32px auto;">
+            <h3 style="font-size: 18px; font-weight: 800; margin-bottom: 20px; display: flex; align-items: center; gap: 10px;">
+              <i data-lucide="send" style="width: 20px; height: 20px; color: var(--primary);"></i> Broadcast System Notification
+            </h3>
+            <div class="form-group">
+              <label>Notification Message</label>
+              <textarea id="broadcast-message" class="form-control" rows="4" placeholder="Enter notification message for platform..."></textarea>
+            </div>
+            <button class="btn btn-primary" onclick="sendBroadcastNotification()">
+              <i data-lucide="megaphone" style="width: 18px; height: 18px;"></i> Send Notification
+            </button>
+          </div>
+
+          <h3 style="font-size: 16px; font-weight: 800; margin-bottom: 16px; display: flex; align-items: center; gap: 8px;">
+            <i data-lucide="history" style="width: 20px; height: 20px; color: var(--primary);"></i> Incoming Partner Applications
+          </h3>
+          <div class="table-container">
+            <table>
+              <thead>
+                <tr>
+                  <th>Type</th>
+                  <th>Applicant Name</th>
+                  <th>Email</th>
+                  <th>Status</th>
+                  <th>Action</th>
+                </tr>
+              </thead>
+              <tbody id="notifications-tbody"></tbody>
+            </table>
+          </div>
+        </section>
+      </div>
+    </main>
+  </div>
+
+  <!-- BANNER CREATE / EDIT MODAL -->
+  <div id="banner-modal" class="modal hidden">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h3 id="banner-modal-title">Add New Banner</h3>
+        <span class="modal-close" onclick="closeModal('banner-modal')">&times;</span>
+      </div>
+      <input type="hidden" id="banner-id">
+      <div class="form-group">
+        <label>Banner Title</label>
+        <input type="text" id="banner-title" class="form-control" placeholder="50% OFF On First Order">
+      </div>
+      <div class="form-group">
+        <label>Subtitle / Offer Tag</label>
+        <input type="text" id="banner-subtitle" class="form-control" placeholder="Use Coupon HUNGER50">
+      </div>
+      <div class="form-group">
+        <label>Banner Image URL</label>
+        <input type="url" id="banner-image" class="form-control" placeholder="https://images.unsplash.com/photo-...">
+      </div>
+      <div class="form-group">
+        <label>Display Status</label>
+        <select id="banner-active" class="form-control">
+          <option value="true">Active (Show on Customer App)</option>
+          <option value="false">Inactive (Hidden)</option>
+        </select>
+      </div>
+      <button class="btn btn-primary" onclick="saveBanner()">Save Banner</button>
+    </div>
+  </div>
+
+  <!-- COUPON MODAL -->
+  <div id="coupon-modal" class="modal hidden">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h3>Create Coupon</h3>
+        <span class="modal-close" onclick="closeModal('coupon-modal')">&times;</span>
+      </div>
+      <div class="form-group">
+        <label>Coupon Code</label>
+        <input type="text" id="coupon-code" class="form-control" placeholder="HUNGER50">
+      </div>
+      <div class="form-group">
+        <label>Discount Value (₹)</label>
+        <input type="number" id="coupon-discount" class="form-control" placeholder="50">
+      </div>
+      <div class="form-group">
+        <label>Expiry Date</label>
+        <input type="date" id="coupon-expiry" class="form-control">
+      </div>
+      <button class="btn btn-primary" onclick="saveCoupon()">Save Coupon</button>
+    </div>
+  </div>
+
+  <!-- FIREBASE MODULE LOGIC -->
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
+    import { getAuth, signInWithEmailAndPassword, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
+    import { getDatabase, ref, set, get, update, push, remove, onValue } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-database.js";
+
+    const firebaseConfig = {
+      apiKey: "AIzaSyA9RmU8Fc96wvfN9S3nRzhDJF518XzK7fI",
+      authDomain: "food-4c911.firebaseapp.com",
+      databaseURL: "https://food-4c911-default-rtdb.firebaseio.com",
+      projectId: "food-4c911",
+      storageBucket: "food-4c911.firebasestorage.app",
+      messagingSenderId: "334589277094",
+      appId: "1:334589277094:web:95fc7dc6a298eb08031567"
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const auth = getAuth(app);
+    const db = getDatabase(app);
+
+    const ADMIN_COMMISSION_PERCENT = 10; // 10% Platform Commission
+
+    window.state = {
+      customers: {},
+      restaurants: {},
+      deliveryPartners: {},
+      deliveryRatings: {},
+      restaurantRatings: {},
+      orders: {},
+      coupons: {},
+      notifications: {},
+      banners: {},
+      settlements: {},
+      hasUnreadNotifs: true,
+      lastSeenPendingCount: 0
+    };
+
+    const ITEMS_PER_PAGE = 10;
+    window.currentPage = {
+      dash: 1,
+      restaurants: 1,
+      delivery: 1,
+      customers: 1,
+      orders: 1
+    };
+
+    window.showToast = function(message, type = 'info') {
+      const container = document.getElementById('toast-container');
+      const toast = document.createElement('div');
+      toast.className = `toast ${type}`;
+      toast.innerText = message;
+      container.appendChild(toast);
+      setTimeout(() => toast.remove(), 3500);
+    };
+
+    // Helper to hide loader overlay smooth
+    function hideLoader() {
+      const loader = document.getElementById('page-loader');
+      if (loader) loader.classList.add('hidden');
+    }
+
+    // 🔒 1. SECURE ADMIN LOGIN HANDLER
+    const loginForm = document.getElementById('admin-login-form');
+    loginForm.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const email = document.getElementById('login-email').value;
+      const password = document.getElementById('login-password').value;
+
+      try {
+        // Step A: Firebase Auth Login
+        const userCredential = await signInWithEmailAndPassword(auth, email, password);
+        const user = userCredential.user;
+
+        // Step B: Verify if UID exists in 'admins' node in Database
+        const adminRef = ref(db, `admins/${user.uid}`);
+        const snapshot = await get(adminRef);
+
+        if (!snapshot.exists() || snapshot.val() !== true) {
+          await signOut(auth); // Immediately Logout unauthorized account
+          showToast('❌ Access Denied: Aapka account Admin Panel ke liye authorized nahi hai!', 'danger');
+          return;
+        }
+
+        showToast('✅ Admin Login Successful', 'success');
+      } catch (error) {
+        showToast(error.message, 'danger');
+      }
+    });
+
+    // 🔒 2. SECURE AUTH STATE LISTENER (NO FLICKERING ON REFRESH)
+    onAuthStateChanged(auth, async (user) => {
+      if (user) {
+        try {
+          // Session / Page Reload Security Check
+          const adminRef = ref(db, `admins/${user.uid}`);
+          const snapshot = await get(adminRef);
+
+          if (!snapshot.exists() || snapshot.val() !== true) {
+            await signOut(auth); // Force Logout Customer / Delivery Boy
+            document.getElementById('auth-view').classList.remove('hidden');
+            document.getElementById('dashboard-view').classList.add('hidden');
+            showToast('🛑 Access Blocked: Unauthorized Login Detected!', 'danger');
+            hideLoader();
+            return;
+          }
+
+          // Verification Passed -> Show Dashboard Directly
+          document.getElementById('auth-view').classList.add('hidden');
+          document.getElementById('dashboard-view').classList.remove('hidden');
+          document.getElementById('admin-user-display').innerHTML = `<i data-lucide="shield-check" style="width: 18px; height: 18px; color: var(--primary);"></i> ${user.email}`;
+          
+          attachRealtimeListeners();
+          setTimeout(() => typeof lucide !== 'undefined' && lucide.createIcons(), 100);
+
+        } catch (err) {
+          await signOut(auth);
+          document.getElementById('auth-view').classList.remove('hidden');
+          document.getElementById('dashboard-view').classList.add('hidden');
+          showToast('❌ Admin Status Verification Failed', 'danger');
+        }
+      } else {
+        // User logged out -> Show Login Screen
+        document.getElementById('auth-view').classList.remove('hidden');
+        document.getElementById('dashboard-view').classList.add('hidden');
+      }
+
+      // Hide Loading Overlay once state is verified
+      hideLoader();
+    });
+
+    window.logoutAdmin = async function() {
+      await signOut(auth);
+      showToast('Logged out successfully');
+    };
+
+    function attachRealtimeListeners() {
+      onValue(ref(db, 'customers'), (snapshot) => {
+        window.state.customers = snapshot.val() || {};
+        renderCustomers();
+        updateDashboardStats();
+      });
+
+      onValue(ref(db, 'restaurants'), (snapshot) => {
+        window.state.restaurants = snapshot.val() || {};
+        renderRestaurants();
+        updateDashboardStats();
+        updateApplicationNotifications();
+        renderRestaurantSettlements();
+      });
+
+      onValue(ref(db, 'deliveryPartners'), (snapshot) => {
+        window.state.deliveryPartners = snapshot.val() || {};
+        renderDeliveryPartners();
+        updateDashboardStats();
+        autoAssignUnassignedOrders();
+        updateApplicationNotifications();
+        renderRiderSettlements();
+        renderAdminRatings();
+      });
+
+      onValue(ref(db, 'deliveryRatings'), (snapshot) => {
+        window.state.deliveryRatings = snapshot.val() || {};
+        renderDeliveryPartners();
+        renderAdminRatings();
+      });
+
+      onValue(ref(db, 'restaurantRatings'), (snapshot) => {
+        window.state.restaurantRatings = snapshot.val() || {};
+        renderRestaurants();
+        renderAdminRatings();
+      });
+
+      onValue(ref(db, 'orders'), (snapshot) => {
+        window.state.orders = snapshot.val() || {};
+        autoAssignUnassignedOrders();
+        renderOrders();
+        renderDashboardOrders();
+        updateDashboardStats();
+        renderCharts();
+        renderRestaurantSettlements();
+        renderRiderSettlements();
+      });
+
+      onValue(ref(db, 'coupons'), (snapshot) => {
+        window.state.coupons = snapshot.val() || {};
+        renderCoupons();
+      });
+
+      onValue(ref(db, 'banners'), (snapshot) => {
+        window.state.banners = snapshot.val() || {};
+        renderBanners();
+      });
+
+      onValue(ref(db, 'settlements'), (snapshot) => {
+        window.state.settlements = snapshot.val() || {};
+        renderRestaurantSettlements();
+        renderRiderSettlements();
+      });
+    }
+
+    // 📣 BROADCAST NOTIFICATION FUNCTION
+    window.sendBroadcastNotification = async function() {
+      const messageInput = document.getElementById('broadcast-message');
+      const message = messageInput ? messageInput.value.trim() : '';
+
+      if (!message) {
+        showToast('Please enter a notification message', 'warning');
+        return;
+      }
+
+      try {
+        const newNotifRef = push(ref(db, 'broadcastNotifications'));
+        await set(newNotifRef, {
+          title: "Admin Broadcast",
+          message: message,
+          createdAt: Date.now(),
+          sender: "Admin"
+        });
+
+        messageInput.value = '';
+        showToast('📣 Broadcast notification sent successfully to all apps!', 'success');
+      } catch (err) {
+        showToast('Failed to send notification: ' + err.message, 'danger');
+      }
+    };
+
+    // 🔥 FACTORY SYSTEM RESET FUNCTION
+    window.resetAllSystemData = async function() {
+      if (!confirm("⚠️ WARNING: This will PERMANENTLY DELETE ALL SYSTEM DATA! Proceed?")) {
+        return;
+      }
+
+      const confirmInput = prompt("To confirm FULL SYSTEM WIPE, please type 'RESET' in CAPITAL letters below:");
+      if (confirmInput !== "RESET") {
+        showToast("System Reset Cancelled. Text confirmation did not match.", "warning");
+        return;
+      }
+
+      try {
+        const nodesToReset = [
+          'customers', 'restaurants', 'menus', 'deliveryPartners', 
+          'orders', 'chats', 'settlements', 'coupons', 
+          'banners', 'deliveryRatings', 'restaurantRatings', 'broadcastNotifications'
+        ];
+
+        for (const node of nodesToReset) {
+          await remove(ref(db, node));
+        }
+
+        showToast("🔥 Full Factory Reset Complete! All system data cleared.", "success");
+      } catch (err) {
+        showToast("Reset Error: " + err.message, "danger");
+      }
+    };
+
+    window.switchRatingSubTab = function(type) {
+      const riderBtn = document.getElementById('subtab-rider-btn');
+      const restBtn = document.getElementById('subtab-restaurant-btn');
+      const riderContainer = document.getElementById('ratings-riders-container');
+      const restContainer = document.getElementById('ratings-restaurants-container');
+
+      if (type === 'RIDER') {
+        riderBtn.classList.add('active');
+        restBtn.classList.remove('active');
+        riderContainer.classList.remove('hidden');
+        restContainer.classList.add('hidden');
+      } else {
+        restBtn.classList.add('active');
+        riderBtn.classList.remove('active');
+        restContainer.classList.remove('hidden');
+        riderContainer.classList.add('hidden');
+      }
+    };
+
+    window.renderAdminRatings = function() {
+      const ridersContainer = document.getElementById('ratings-riders-container');
+      const restContainer = document.getElementById('ratings-restaurants-container');
+
+      if (!ridersContainer || !restContainer) return;
+
+      const riders = window.state.deliveryPartners || {};
+      const allRiderRatings = window.state.deliveryRatings || {};
+      const restaurants = window.state.restaurants || {};
+      const allRestRatings = window.state.restaurantRatings || {};
+
+      const riderEntries = Object.entries(riders);
+      if (riderEntries.length === 0) {
+        ridersContainer.innerHTML = `<p style="text-align:center; color:var(--text-muted); padding:20px;">No delivery partners found.</p>`;
+      } else {
+        ridersContainer.innerHTML = riderEntries.map(([uid, rider]) => {
+          const riderRatingsObj = allRiderRatings[uid] || {};
+          const reviewsList = Object.values(riderRatingsObj);
+
+          let avgRatingStr = "5.0";
+          if (reviewsList.length > 0) {
+            const totalStars = reviewsList.reduce((sum, item) => sum + Number(item.rating || 0), 0);
+            avgRatingStr = (totalStars / reviewsList.length).toFixed(1);
+          }
+
+          const reviewsHtml = reviewsList.length > 0 ? reviewsList.map(rev => `
+            <div style="background:#f8fafc; padding:12px; border-radius:8px; margin-top:8px; border:1px solid var(--border-color);">
+              <div style="display:flex; justify-content:space-between; margin-bottom:4px;">
+                <strong style="color:var(--warning);">⭐ ${rev.rating || 5} Stars</strong>
+                <small style="color:var(--text-muted);">${rev.createdAt ? new Date(rev.createdAt).toLocaleDateString() : 'N/A'}</small>
+              </div>
+              <p style="font-size:13px; color:var(--text-main); margin:0;">${rev.feedback || 'No written feedback provided.'}</p>
+            </div>
+          `).join('') : '<p style="font-size:12px; color:var(--text-muted); margin-top:8px;">No reviews received yet.</p>';
+
+          return `
+            <div class="rating-rider-card">
+              <div style="display:flex; justify-content:space-between; align-items:center; border-bottom:1px solid var(--border-color); padding-bottom:12px;">
+                <div>
+                  <h4 style="font-size:16px; font-weight:800;">🛵 ${rider.name || 'Delivery Partner'}</h4>
+                  <small style="color:var(--text-muted);">Phone: ${rider.phone || 'N/A'} | Vehicle: ${rider.vehicle || 'N/A'}</small>
+                </div>
+                <span class="rating-star-badge">⭐ ${avgRatingStr} (${reviewsList.length} reviews)</span>
+              </div>
+              <div style="margin-top:12px;">
+                <strong style="font-size:13px; color:var(--text-muted);">Customer Delivery Feedback:</strong>
+                ${reviewsHtml}
+              </div>
+            </div>
+          `;
+        }).join('');
+      }
+
+      const restEntries = Object.entries(restaurants);
+      if (restEntries.length === 0) {
+        restContainer.innerHTML = `<p style="text-align:center; color:var(--text-muted); padding:20px;">No restaurants found.</p>`;
+      } else {
+        restContainer.innerHTML = restEntries.map(([uid, r]) => {
+          const restRatingsObj = allRestRatings[uid] || {};
+          const reviewsList = Object.values(restRatingsObj);
+
+          let avgRatingStr = "5.0";
+          if (reviewsList.length > 0) {
+            const totalStars = reviewsList.reduce((sum, item) => sum + Number(item.rating || 0), 0);
+            avgRatingStr = (totalStars / reviewsList.length).toFixed(1);
+          }
+
+          const reviewsHtml = reviewsList.length > 0 ? reviewsList.map(rev => `
+            <div style="background:#f8fafc; padding:12px; border-radius:8px; margin-top:8px; border:1px solid var(--border-color);">
+              <div style="display:flex; justify-content:space-between; margin-bottom:4px;">
+                <strong style="color:var(--primary);">⭐ ${rev.rating || 5} Stars</strong>
+                <small style="color:var(--text-muted);">${rev.customerName || 'Customer'} • ${rev.createdAt ? new Date(rev.createdAt).toLocaleDateString() : 'N/A'}</small>
+              </div>
+              <p style="font-size:13px; color:var(--text-main); margin:0;">${rev.feedback || 'No written feedback provided.'}</p>
+            </div>
+          `).join('') : '<p style="font-size:12px; color:var(--text-muted); margin-top:8px;">No reviews received yet.</p>';
+
+          return `
+            <div class="rating-rider-card">
+              <div style="display:flex; justify-content:space-between; align-items:center; border-bottom:1px solid var(--border-color); padding-bottom:12px;">
+                <div>
+                  <h4 style="font-size:16px; font-weight:800; color:var(--primary);">🏬 ${r.name || 'Restaurant'}</h4>
+                  <small style="color:var(--text-muted);">Cuisine: ${r.cuisine || 'N/A'} | Address: ${r.address || 'N/A'}</small>
+                </div>
+                <span class="rating-star-badge" style="background:#eef2ff; color:var(--primary);">⭐ ${avgRatingStr} (${reviewsList.length} reviews)</span>
+              </div>
+              <div style="margin-top:12px;">
+                <strong style="font-size:13px; color:var(--text-muted);">Customer Taste & Quality Reviews:</strong>
+                ${reviewsHtml}
+              </div>
+            </div>
+          `;
+        }).join('');
+      }
+    };
+
+    window.renderRestaurantSettlements = function() {
+      const tbody = document.getElementById('restaurant-settlement-tbody');
+      if (!tbody) return;
+
+      const restaurants = window.state.restaurants || {};
+      const orders = Object.values(window.state.orders || {}).filter(o => o.status === 'DELIVERED');
+      const settlements = window.state.settlements || {};
+
+      const rows = Object.entries(restaurants).map(([uid, r]) => {
+        const myOrders = orders.filter(o => o.restaurantId === uid);
+        const totalSales = myOrders.reduce((sum, o) => sum + Number(o.subtotal || o.totalAmount || 0), 0);
+        const totalEarned = totalSales - (totalSales * (ADMIN_COMMISSION_PERCENT / 100));
+
+        let totalPaid = 0;
+        Object.values(settlements).forEach(s => {
+          if (s.recipientUid === uid && s.type === 'RESTAURANT' && s.action === 'PAYOUT_GIVEN') {
+            totalPaid += Number(s.amount || 0);
+          }
+        });
+
+        const pendingPayout = Math.max(0, totalEarned - totalPaid);
+
+        return `
+          <tr>
+            <td><strong>${r.name || 'N/A'}</strong><br><small style="color:var(--text-muted);">${r.email || ''}</small></td>
+            <td>${myOrders.length} Orders</td>
+            <td>₹${totalSales.toFixed(2)}</td>
+            <td style="color:var(--success); font-weight:bold;">₹${pendingPayout.toFixed(2)}</td>
+            <td>
+              ${pendingPayout > 0 ? `
+                <button class="btn btn-success btn-sm" onclick="paySettlement('${uid}', '${r.name}', ${pendingPayout.toFixed(2)}, 'RESTAURANT')">
+                  ✅ Mark Paid (₹${pendingPayout.toFixed(0)})
+                </button>
+              ` : '<span class="badge badge-success">Settled</span>'}
+            </td>
+          </tr>
+        `;
+      });
+
+      tbody.innerHTML = rows.length > 0 ? rows.join('') : `<tr><td colspan="5" style="text-align:center; color:var(--text-muted);">No restaurants found.</td></tr>`;
+    };
+
+    window.renderRiderSettlements = function() {
+      const tbody = document.getElementById('rider-settlement-tbody');
+      if (!tbody) return;
+
+      const riders = window.state.deliveryPartners || {};
+      const orders = Object.values(window.state.orders || {}).filter(o => o.status === 'DELIVERED');
+      const settlements = window.state.settlements || {};
+
+      const rows = Object.entries(riders).map(([uid, rider]) => {
+        const myDeliveries = orders.filter(o => o.deliveryUid === uid);
+
+        let totalEarnings = 0;
+        let totalCODCollected = 0;
+
+        myDeliveries.forEach(o => {
+          totalEarnings += Number(o.deliveryCharge || 30);
+          if (o.paymentMethod === 'COD') {
+            totalCODCollected += Number(o.totalAmount || 0);
+          }
+        });
+
+        let totalPaidOut = 0;
+        let totalCashReceived = 0;
+
+        Object.values(settlements).forEach(s => {
+          if (s.recipientUid === uid && s.type === 'RIDER') {
+            if (s.action === 'PAYOUT_GIVEN') totalPaidOut += Number(s.amount || 0);
+            if (s.action === 'CASH_RECEIVED') totalCashReceived += Number(s.amount || 0);
+          }
+        });
+
+        const netBalance = (totalEarnings - totalCODCollected - totalPaidOut) + totalCashReceived;
+
+        let statusBadge = '';
+        let actionBtn = '';
+
+        if (netBalance > 0) {
+          statusBadge = `<span style="color:var(--success); font-weight:bold;">Admin owes Rider: ₹${netBalance.toFixed(2)}</span>`;
+          actionBtn = `
+            <button class="btn btn-success btn-sm" onclick="paySettlement('${uid}', '${rider.name}', ${netBalance.toFixed(2)}, 'RIDER')">
+              💵 Pay Rider
+            </button>
+          `;
+        } else if (netBalance < 0) {
+          const cashToCollect = Math.abs(netBalance);
+          statusBadge = `<span style="color:var(--danger); font-weight:bold;">Rider owes Admin: ₹${cashToCollect.toFixed(2)}</span>`;
+          actionBtn = `
+            <button class="btn btn-warning btn-sm" onclick="collectCashFromRider('${uid}', '${rider.name}', ${cashToCollect.toFixed(2)})">
+              📥 Receive Cash
+            </button>
+          `;
+        } else {
+          statusBadge = `<span style="color:var(--text-muted);">All Clear (₹0.00)</span>`;
+          actionBtn = `<span class="badge badge-success">Settled</span>`;
+        }
+
+        return `
+          <tr>
+            <td><strong>${rider.name || 'N/A'}</strong><br><small style="color:var(--text-muted);">${rider.phone || ''}</small></td>
+            <td>₹${totalEarnings.toFixed(2)}</td>
+            <td style="color:var(--danger);">₹${totalCODCollected.toFixed(2)}</td>
+            <td>${statusBadge}</td>
+            <td>${actionBtn}</td>
+          </tr>
+        `;
+      });
+
+      tbody.innerHTML = rows.length > 0 ? rows.join('') : `<tr><td colspan="5" style="text-align:center; color:var(--text-muted);">No delivery partners found.</td></tr>`;
+    };
+
+    window.paySettlement = async function(uid, name, amount, type) {
+      if (!confirm(`Confirm paying ₹${amount} to ${name}?`)) return;
+
+      try {
+        const newRef = push(ref(db, 'settlements'));
+        await set(newRef, {
+          recipientUid: uid,
+          recipientName: name,
+          amount: Number(amount),
+          type: type,
+          action: 'PAYOUT_GIVEN',
+          timestamp: Date.now()
+        });
+        showToast(`✅ Payment of ₹${amount} recorded for ${name}`, 'success');
+      } catch (err) {
+        showToast(err.message, 'danger');
+      }
+    };
+
+    window.collectCashFromRider = async function(uid, name, amount) {
+      if (!confirm(`Confirm receiving ₹${amount} cash deposit from ${name}?`)) return;
+
+      try {
+        const newRef = push(ref(db, 'settlements'));
+        await set(newRef, {
+          recipientUid: uid,
+          recipientName: name,
+          amount: Number(amount),
+          type: 'RIDER',
+          action: 'CASH_RECEIVED',
+          timestamp: Date.now()
+        });
+        showToast(`✅ Received ₹${amount} cash deposit from ${name}`, 'success');
+      } catch (err) {
+        showToast(err.message, 'danger');
+      }
+    };
+
+    function updateApplicationNotifications() {
+      const pendingRest = Object.entries(window.state.restaurants).filter(([_, r]) => !r.approved);
+      const pendingRiders = Object.entries(window.state.deliveryPartners).filter(([_, d]) => !d.approved);
+
+      const totalPending = pendingRest.length + pendingRiders.length;
+      const redDot = document.getElementById('notif-red-dot');
+      const badge = document.getElementById('notif-count-badge');
+      const dropdownBody = document.getElementById('notif-dropdown-body');
+
+      if (badge) badge.innerText = `${totalPending} Pending`;
+
+      if (totalPending > 0) {
+        if (totalPending > window.state.lastSeenPendingCount) {
+          window.state.hasUnreadNotifs = true;
+        }
+
+        if (window.state.hasUnreadNotifs) {
+          redDot.classList.remove('hidden');
+        } else {
+          redDot.classList.add('hidden');
+        }
+
+        let listHtml = '';
+        pendingRest.forEach(([uid, r]) => {
+          listHtml += `
+            <div class="notif-item unread" onclick="switchTab('restaurants'); hideNotifDropdown();">
+              <strong>🏪 Restaurant Application:</strong> ${r.name || 'New Restaurant'}<br>
+              <small style="color:var(--text-muted);">${r.email || ''}</small>
+            </div>
+          `;
+        });
+
+        pendingRiders.forEach(([uid, d]) => {
+          listHtml += `
+            <div class="notif-item unread" onclick="switchTab('delivery'); hideNotifDropdown();">
+              <strong>🛵 Delivery Boy Application:</strong> ${d.name || 'New Rider'}<br>
+              <small style="color:var(--text-muted);">${d.phone || ''}</small>
+            </div>
+          `;
+        });
+
+        dropdownBody.innerHTML = listHtml;
+      } else {
+        window.state.hasUnreadNotifs = false;
+        redDot.classList.add('hidden');
+        dropdownBody.innerHTML = `<div style="padding:16px; text-align:center; color:var(--text-muted);">No pending applications.</div>`;
+      }
+
+      renderNotifications();
+    }
+
+    window.toggleNotifDropdown = function() {
+      const dropdown = document.getElementById('notif-dropdown');
+      const redDot = document.getElementById('notif-red-dot');
+
+      if (dropdown.classList.contains('hidden')) {
+        dropdown.classList.remove('hidden');
+        redDot.classList.add('hidden');
+        window.state.hasUnreadNotifs = false;
+        
+        const pendingRest = Object.entries(window.state.restaurants).filter(([_, r]) => !r.approved);
+        const pendingRiders = Object.entries(window.state.deliveryPartners).filter(([_, d]) => !d.approved);
+        window.state.lastSeenPendingCount = pendingRest.length + pendingRiders.length;
+      } else {
+        dropdown.classList.add('hidden');
+      }
+    };
+
+    window.hideNotifDropdown = function() {
+      document.getElementById('notif-dropdown').classList.add('hidden');
+    };
+
+    async function autoAssignUnassignedOrders() {
+      const orders = window.state.orders;
+      const partners = window.state.deliveryPartners;
+
+      const activeRiders = Object.entries(partners).filter(([uid, d]) => d.approved === true && d.online === true);
+
+      if (activeRiders.length === 0) return;
+
+      for (const [orderId, order] of Object.entries(orders)) {
+        if (!order.deliveryUid && ['ACCEPTED', 'PREPARING', 'READY_FOR_PICKUP'].includes(order.status)) {
+          const randomIndex = Math.floor(Math.random() * activeRiders.length);
+          const [selectedRiderUid] = activeRiders[randomIndex];
+
+          try {
+            await update(ref(db, `orders/${orderId}`), {
+              deliveryUid: selectedRiderUid,
+              updatedAt: Date.now()
+            });
+          } catch (err) {
+            console.error("Auto assignment error:", err);
+          }
+        }
+      }
+    }
+
+    function updateDashboardStats() {
+      const orders = Object.values(window.state.orders);
+      const restaurants = Object.keys(window.state.restaurants);
+      const customers = Object.keys(window.state.customers);
+      const delivery = Object.keys(window.state.deliveryPartners);
+
+      const totalRevenue = orders
+        .filter(o => o.status === 'DELIVERED')
+        .reduce((sum, o) => sum + (Number(o.totalAmount) || 0), 0);
+
+      document.getElementById('stat-total-orders').innerText = orders.length;
+      document.getElementById('stat-total-revenue').innerText = `₹${totalRevenue.toFixed(2)}`;
+      document.getElementById('stat-total-restaurants').innerText = restaurants.length;
+      document.getElementById('stat-total-customers').innerText = customers.length;
+      document.getElementById('stat-total-delivery').innerText = delivery.length;
+    }
+
+    function renderPaginationUI(containerId, totalItems, pageKey, renderFunctionName) {
+      const container = document.getElementById(containerId);
+      if (!container) return;
+
+      const totalPages = Math.ceil(totalItems / ITEMS_PER_PAGE);
+      const curPage = window.currentPage[pageKey] || 1;
+
+      if (totalItems === 0) {
+        container.innerHTML = '';
+        return;
+      }
+
+      const start = (curPage - 1) * ITEMS_PER_PAGE + 1;
+      const end = Math.min(curPage * ITEMS_PER_PAGE, totalItems);
+
+      let buttonsHtml = '';
+
+      buttonsHtml += `<button class="page-btn" ${curPage === 1 ? 'disabled' : ''} onclick="changePage('${pageKey}', ${curPage - 1}, '${renderFunctionName}')">Previous</button>`;
+
+      for (let i = 1; i <= totalPages; i++) {
+        buttonsHtml += `<button class="page-btn ${i === curPage ? 'active' : ''}" onclick="changePage('${pageKey}', ${i}, '${renderFunctionName}')">${i}</button>`;
+      }
+
+      buttonsHtml += `<button class="page-btn" ${curPage === totalPages || totalPages === 0 ? 'disabled' : ''} onclick="changePage('${pageKey}', ${curPage + 1}, '${renderFunctionName}')">Next</button>`;
+
+      container.innerHTML = `
+        <div>Showing ${start} to ${end} of ${totalItems} entries</div>
+        <div class="pagination-buttons">${buttonsHtml}</div>
+      `;
+    }
+
+    window.changePage = function(pageKey, newPage, renderFuncName) {
+      window.currentPage[pageKey] = newPage;
+      if (typeof window[renderFuncName] === 'function') {
+        window[renderFuncName]();
+      }
+    };
+
+    window.switchTab = function(tabName) {
+      const panels = ['dashboard', 'financials', 'banners', 'restaurants', 'delivery', 'ratings', 'customers', 'orders', 'coupons', 'reports', 'notifications'];
+      panels.forEach(p => document.getElementById(`panel-${p}`).classList.add('hidden'));
+      document.getElementById(`panel-${tabName}`).classList.remove('hidden');
+
+      document.querySelectorAll('.sidebar-menu li').forEach(li => li.classList.remove('active'));
+      
+      const titles = {
+        dashboard: '<i data-lucide="layout-dashboard" style="width: 22px; height: 22px; color: var(--primary);"></i> Dashboard Overview',
+        financials: '<i data-lucide="wallet" style="width: 22px; height: 22px; color: var(--primary);"></i> Financial Settlements & Payouts',
+        banners: '<i data-lucide="image" style="width: 22px; height: 22px; color: var(--primary);"></i> Homepage Banner Management',
+        restaurants: '<i data-lucide="store" style="width: 22px; height: 22px; color: var(--primary);"></i> Restaurant Partner Management',
+        delivery: '<i data-lucide="bike" style="width: 22px; height: 22px; color: var(--primary);"></i> Delivery Partner Approval',
+        ratings: '<i data-lucide="star" style="width: 22px; height: 22px; color: var(--warning);"></i> Customer Ratings & Feedback',
+        customers: '<i data-lucide="users" style="width: 22px; height: 22px; color: var(--primary);"></i> Customer Master List',
+        orders: '<i data-lucide="shopping-bag" style="width: 22px; height: 22px; color: var(--primary);"></i> Order Control & Bulk Operations',
+        coupons: '<i data-lucide="ticket" style="width: 22px; height: 22px; color: var(--primary);"></i> Coupon & Discount Codes',
+        reports: '<i data-lucide="bar-chart-3" style="width: 22px; height: 22px; color: var(--primary);"></i> Analytics & Business Reports',
+        notifications: '<i data-lucide="bell" style="width: 22px; height: 22px; color: var(--primary);"></i> Incoming Partner Applications'
+      };
+
+      document.getElementById('topbar-title').innerHTML = titles[tabName];
+      
+      const menuItems = document.querySelectorAll('.sidebar-menu li');
+      const indexMap = { dashboard:0, financials:1, banners:2, restaurants:3, delivery:4, ratings:5, customers:6, orders:7, coupons:8, reports:9, notifications:10 };
+      if(menuItems[indexMap[tabName]]) {
+        menuItems[indexMap[tabName]].classList.add('active');
+      }
+
+      if (tabName === 'financials') {
+        renderRestaurantSettlements();
+        renderRiderSettlements();
+      }
+
+      if (tabName === 'ratings') {
+        renderAdminRatings();
+      }
+
+      if (tabName === 'reports') {
+        renderCharts();
+      }
+
+      setTimeout(() => typeof lucide !== 'undefined' && lucide.createIcons(), 50);
+    };
+
+    window.renderDashboardOrders = function() {
+      const tbody = document.getElementById('dashboard-orders-tbody');
+      const ordersList = Object.entries(window.state.orders).reverse();
+
+      if (ordersList.length === 0) {
+        tbody.innerHTML = `<tr><td colspan="6" style="text-align:center; color: var(--text-muted);">No orders recorded yet.</td></tr>`;
+        renderPaginationUI('dash-pagination', 0, 'dash', 'renderDashboardOrders');
+        return;
+      }
+
+      const page = window.currentPage.dash || 1;
+      const startIndex = (page - 1) * ITEMS_PER_PAGE;
+      const paginatedList = ordersList.slice(startIndex, startIndex + ITEMS_PER_PAGE);
+
+      tbody.innerHTML = paginatedList.map(([id, o]) => {
+        let statusBadge = `<span class="badge badge-info">${o.status}</span>`;
+        if (o.status === 'CANCELLED') {
+          statusBadge = `
+            <span class="badge badge-danger">CANCELLED</span>
+            <div style="font-size:11px; color:var(--danger); font-weight:600; margin-top:2px;">
+              Reason: ${o.cancellationReason || 'No reason'}
+            </div>
+          `;
+        }
+
+        return `
+          <tr>
+            <td><strong>${o.orderNumber || id}</strong></td>
+            <td>₹${Number(o.subtotal || 0).toFixed(2)}</td>
+            <td>₹${(Number(o.deliveryCharge || 0) + Number(o.tax || 0)).toFixed(2)}</td>
+            <td><strong>₹${Number(o.totalAmount || 0).toFixed(2)}</strong></td>
+            <td>${statusBadge}</td>
+            <td>${o.createdAt ? new Date(o.createdAt).toLocaleString() : 'N/A'}</td>
+          </tr>
+        `;
+      }).join('');
+
+      renderPaginationUI('dash-pagination', ordersList.length, 'dash', 'renderDashboardOrders');
+    };
+
+    window.renderBanners = function() {
+      const tbody = document.getElementById('banners-tbody');
+      const entries = Object.entries(window.state.banners);
+
+      if (entries.length === 0) {
+        tbody.innerHTML = `<tr><td colspan="5" style="text-align:center; color: var(--text-muted);">No banners created yet. Click "+ Add New Banner" above.</td></tr>`;
+        return;
+      }
+
+      tbody.innerHTML = entries.map(([id, b]) => `
+        <tr>
+          <td><img src="${b.imageUrl || 'https://images.unsplash.com/photo-1504674900247-0877df9cc836?w=200'}" class="banner-preview-img"></td>
+          <td><strong>${b.title || 'N/A'}</strong></td>
+          <td>${b.subtitle || 'N/A'}</td>
+          <td><span class="badge ${b.active ? 'badge-success' : 'badge-danger'}">${b.active ? 'ACTIVE' : 'INACTIVE'}</span></td>
+          <td>
+            <button class="btn btn-info btn-sm" onclick="openBannerModal('${id}')">Edit</button>
+            <button class="btn btn-danger btn-sm" style="background:#dc2626; margin-left:4px;" onclick="deleteBanner('${id}')">Delete</button>
+          </td>
+        </tr>
+      `).join('');
+    };
+
+    window.openBannerModal = function(bannerId = null) {
+      document.getElementById('banner-id').value = bannerId || '';
+      if (bannerId && window.state.banners[bannerId]) {
+        const b = window.state.banners[bannerId];
+        document.getElementById('banner-modal-title').innerText = "Edit Banner";
+        document.getElementById('banner-title').value = b.title || '';
+        document.getElementById('banner-subtitle').value = b.subtitle || '';
+        document.getElementById('banner-image').value = b.imageUrl || '';
+        document.getElementById('banner-active').value = b.active ? "true" : "false";
+      } else {
+        document.getElementById('banner-modal-title').innerText = "Add New Banner";
+        document.getElementById('banner-title').value = '';
+        document.getElementById('banner-subtitle').value = '';
+        document.getElementById('banner-image').value = '';
+        document.getElementById('banner-active').value = "true";
+      }
+      document.getElementById('banner-modal').classList.remove('hidden');
+    };
+
+    window.saveBanner = async function() {
+      const bannerId = document.getElementById('banner-id').value;
+      const title = document.getElementById('banner-title').value.trim();
+      const subtitle = document.getElementById('banner-subtitle').value.trim();
+      const imageUrl = document.getElementById('banner-image').value.trim();
+      const active = document.getElementById('banner-active').value === "true";
+
+      if (!title || !imageUrl) {
+        showToast('Title and Banner Image URL are required', 'danger');
+        return;
+      }
+
+      const bannerData = {
+        title,
+        subtitle,
+        imageUrl,
+        active,
+        updatedAt: Date.now()
+      };
+
+      try {
+        if (bannerId) {
+          await update(ref(db, `banners/${bannerId}`), bannerData);
+          showToast('Banner updated successfully', 'success');
+        } else {
+          bannerData.createdAt = Date.now();
+          const newRef = push(ref(db, 'banners'));
+          await set(newRef, bannerData);
+          showToast('New banner added successfully', 'success');
+        }
+        closeModal('banner-modal');
+      } catch (err) {
+        showToast(err.message, 'danger');
+      }
+    };
+
+    window.deleteBanner = async function(bannerId) {
+      if (!confirm('Are you sure you want to PERMANENTLY delete this banner?')) return;
+      try {
+        await remove(ref(db, `banners/${bannerId}`));
+        showToast('Banner deleted successfully', 'success');
+      } catch (err) {
+        showToast(err.message, 'danger');
+      }
+    };
+
+    window.renderRestaurants = function() {
+      const tbody = document.getElementById('restaurants-tbody');
+      const search = (document.getElementById('restaurant-search').value || '').toLowerCase();
+      const filter = document.getElementById('restaurant-filter').value;
+
+      const entries = Object.entries(window.state.restaurants).filter(([uid, r]) => {
+        const matchesSearch = (r.name || '').toLowerCase().includes(search) || (r.email || '').toLowerCase().includes(search) || uid.toLowerCase().includes(search);
+        const matchesFilter = filter === 'ALL' || (filter === 'APPROVED' ? r.approved === true : !r.approved);
+        return matchesSearch && matchesFilter;
+      });
+
+      if (entries.length === 0) {
+        tbody.innerHTML = `<tr><td colspan="9" style="text-align:center; color: var(--text-muted);">No restaurant accounts found.</td></tr>`;
+        renderPaginationUI('restaurants-pagination', 0, 'restaurants', 'renderRestaurants');
+        return;
+      }
+
+      const page = window.currentPage.restaurants || 1;
+      const startIndex = (page - 1) * ITEMS_PER_PAGE;
+      const paginatedList = entries.slice(startIndex, startIndex + ITEMS_PER_PAGE);
+
+      tbody.innerHTML = paginatedList.map(([uid, r]) => {
+        const restRatingsObj = window.state.restaurantRatings[uid] || {};
+        const reviewsList = Object.values(restRatingsObj);
+        let avgRatingStr = "5.0";
+        if (reviewsList.length > 0) {
+          const totalStars = reviewsList.reduce((sum, item) => sum + Number(item.rating || 0), 0);
+          avgRatingStr = (totalStars / reviewsList.length).toFixed(1);
+        }
+
+        return `
+          <tr>
+            <td style="text-align: center;">
+              <input type="checkbox" class="restaurant-checkbox" value="${uid}">
+            </td>
+            <td><small style="color:var(--primary); font-weight:bold; background:#eef2ff; padding:2px 6px; border-radius:4px;">${uid}</small></td>
+            <td><strong>${r.name || 'N/A'}</strong></td>
+            <td><strong style="color:var(--primary);">⭐ ${avgRatingStr}</strong> (${reviewsList.length})</td>
+            <td>${r.email || 'N/A'}</td>
+            <td>${r.cuisine || 'N/A'}</td>
+            <td>${r.address || 'N/A'}</td>
+            <td>
+              <span class="badge ${r.approved ? 'badge-success' : 'badge-warning'}">
+                ${r.approved ? 'APPROVED' : 'PENDING'}
+              </span>
+            </td>
+            <td>
+              ${!r.approved ? `<button class="btn btn-success btn-sm" onclick="toggleRestaurantApproval('${uid}', true)">Approve</button>` : ''}
+              ${r.approved ? `<button class="btn btn-danger btn-sm" onclick="toggleRestaurantApproval('${uid}', false)">Revoke</button>` : ''}
+              <button class="btn btn-danger btn-sm" style="background:#dc2626; margin-left:4px;" onclick="deleteRestaurant('${uid}')">Delete</button>
+            </td>
+          </tr>
+        `;
+      }).join('');
+
+      renderPaginationUI('restaurants-pagination', entries.length, 'restaurants', 'renderRestaurants');
+    };
+
+    window.toggleSelectAllRestaurants = function(mainCheckbox) {
+      const checkboxes = document.querySelectorAll('.restaurant-checkbox');
+      checkboxes.forEach(cb => cb.checked = mainCheckbox.checked);
+    };
+
+    window.toggleRestaurantApproval = async function(uid, status) {
+      try {
+        await update(ref(db, `restaurants/${uid}`), { approved: status, updatedAt: Date.now() });
+        showToast(`Restaurant status updated successfully`, 'success');
+      } catch (err) {
+        showToast(`Failed to update status: ${err.message}`, 'danger');
+      }
+    };
+
+    window.deleteRestaurant = async function(uid) {
+      if (!confirm('Are you sure you want to PERMANENTLY delete this restaurant, its menu & reviews?')) return;
+      try {
+        await remove(ref(db, `restaurants/${uid}`));
+        await remove(ref(db, `menus/${uid}`));
+        await remove(ref(db, `restaurantRatings/${uid}`));
+        showToast('Restaurant deleted successfully', 'success');
+      } catch (err) {
+        showToast(err.message, 'danger');
+      }
+    };
+
+    window.deleteSelectedRestaurants = async function() {
+      const selectedCheckboxes = document.querySelectorAll('.restaurant-checkbox:checked');
+      const restaurantUids = Array.from(selectedCheckboxes).map(cb => cb.value);
+
+      if (restaurantUids.length === 0) {
+        showToast('Please select at least one restaurant to delete', 'warning');
+        return;
+      }
+
+      if (!confirm(`Are you sure you want to PERMANENTLY delete ${restaurantUids.length} selected restaurant(s)?`)) return;
+
+      try {
+        for (const uid of restaurantUids) {
+          await remove(ref(db, `restaurants/${uid}`));
+          await remove(ref(db, `menus/${uid}`));
+          await remove(ref(db, `restaurantRatings/${uid}`));
+        }
+        document.getElementById('select-all-restaurants').checked = false;
+        showToast(`${restaurantUids.length} Restaurant(s) deleted successfully`, 'success');
+      } catch (err) {
+        showToast(err.message, 'danger');
+      }
+    };
+
+    window.deleteAllRestaurants = async function() {
+      const totalCount = Object.keys(window.state.restaurants).length;
+      if (totalCount === 0) {
+        showToast('No restaurants available to delete', 'warning');
+        return;
+      }
+
+      if (!confirm(`⚠️ WARNING: Are you sure you want to PERMANENTLY DELETE ALL ${totalCount} RESTAURANTS from the system?`)) return;
+
+      try {
+        await remove(ref(db, 'restaurants'));
+        await remove(ref(db, 'menus'));
+        await remove(ref(db, 'restaurantRatings'));
+        showToast('ALL Restaurants deleted successfully', 'success');
+      } catch (err) {
+        showToast(err.message, 'danger');
+      }
+    };
+
+    window.renderDeliveryPartners = function() {
+      const tbody = document.getElementById('delivery-tbody');
+      const search = (document.getElementById('delivery-search').value || '').toLowerCase();
+      const filter = document.getElementById('delivery-filter').value;
+
+      const entries = Object.entries(window.state.deliveryPartners).filter(([uid, d]) => {
+        const matchesSearch = (d.name || '').toLowerCase().includes(search) || (d.email || '').toLowerCase().includes(search) || (d.phone || '').includes(search) || uid.toLowerCase().includes(search);
+        const matchesFilter = filter === 'ALL' || (filter === 'APPROVED' ? d.approved === true : !d.approved);
+        return matchesSearch && matchesFilter;
+      });
+
+      if (entries.length === 0) {
+        tbody.innerHTML = `<tr><td colspan="11" style="text-align:center; color: var(--text-muted);">No delivery partners found.</td></tr>`;
+        renderPaginationUI('delivery-pagination', 0, 'delivery', 'renderDeliveryPartners');
+        return;
+      }
+
+      const page = window.currentPage.delivery || 1;
+      const startIndex = (page - 1) * ITEMS_PER_PAGE;
+      const paginatedList = entries.slice(startIndex, startIndex + ITEMS_PER_PAGE);
+
+      tbody.innerHTML = paginatedList.map(([uid, d]) => {
+        const riderRatingsObj = window.state.deliveryRatings[uid] || {};
+        const reviewsList = Object.values(riderRatingsObj);
+        let avgRatingStr = "5.0";
+        if (reviewsList.length > 0) {
+          const totalStars = reviewsList.reduce((sum, item) => sum + Number(item.rating || 0), 0);
+          avgRatingStr = (totalStars / reviewsList.length).toFixed(1);
+        }
+
+        return `
+          <tr>
+            <td style="text-align: center;">
+              <input type="checkbox" class="delivery-checkbox" value="${uid}">
+            </td>
+            <td><small style="color:var(--primary); font-weight:bold; background:#eef2ff; padding:2px 6px; border-radius:4px;">${uid}</small></td>
+            <td><strong>${d.name || 'N/A'}</strong></td>
+            <td>${d.email || 'N/A'}</td>
+            <td>${d.phone || 'N/A'}</td>
+            <td><strong style="color:var(--warning);">⭐ ${avgRatingStr}</strong> (${reviewsList.length})</td>
+            <td>${d.vehicle || 'N/A'}</td>
+            <td>
+              <span class="badge ${d.approved ? 'badge-success' : 'badge-warning'}">
+                ${d.approved ? 'APPROVED' : 'PENDING'}
+              </span>
+            </td>
+            <td>
+              <span class="badge ${d.online ? 'badge-success' : 'badge-danger'}">
+                ${d.online ? 'ONLINE' : 'OFFLINE'}
+              </span>
+            </td>
+            <td>₹${Number(d.earnings || 0).toFixed(2)}</td>
+            <td>
+              ${!d.approved ? `<button class="btn btn-success btn-sm" onclick="toggleDeliveryApproval('${uid}', true)">Approve</button>` : ''}
+              ${d.approved ? `<button class="btn btn-danger btn-sm" onclick="toggleDeliveryApproval('${uid}', false)">Revoke</button>` : ''}
+              <button class="btn btn-danger btn-sm" style="background:#dc2626; margin-left:4px;" onclick="deleteDeliveryPartner('${uid}')">Delete</button>
+            </td>
+          </tr>
+        `;
+      }).join('');
+
+      renderPaginationUI('delivery-pagination', entries.length, 'delivery', 'renderDeliveryPartners');
+    };
+
+    window.toggleSelectAllDelivery = function(mainCheckbox) {
+      const checkboxes = document.querySelectorAll('.delivery-checkbox');
+      checkboxes.forEach(cb => cb.checked = mainCheckbox.checked);
+    };
+
+    window.toggleDeliveryApproval = async function(uid, status) {
+      try {
+        await update(ref(db, `deliveryPartners/${uid}`), { approved: status, updatedAt: Date.now() });
+        showToast('Delivery Partner status updated', 'success');
+      } catch (err) {
+        showToast(err.message, 'danger');
+      }
+    };
+
+    window.deleteDeliveryPartner = async function(uid) {
+      if (!confirm('Are you sure you want to PERMANENTLY delete this delivery partner?')) return;
+      try {
+        await remove(ref(db, `deliveryPartners/${uid}`));
+        await remove(ref(db, `deliveryRatings/${uid}`));
+        showToast('Delivery Partner deleted successfully', 'success');
+      } catch (err) {
+        showToast(err.message, 'danger');
+      }
+    };
+
+    window.deleteSelectedDeliveryPartners = async function() {
+      const selectedCheckboxes = document.querySelectorAll('.delivery-checkbox:checked');
+      const partnerUids = Array.from(selectedCheckboxes).map(cb => cb.value);
+
+      if (partnerUids.length === 0) {
+        showToast('Please select at least one delivery partner to delete', 'warning');
+        return;
+      }
+
+      if (!confirm(`Are you sure you want to PERMANENTLY delete ${partnerUids.length} selected delivery partner(s)?`)) return;
+
+      try {
+        for (const uid of partnerUids) {
+          await remove(ref(db, `deliveryPartners/${uid}`));
+          await remove(ref(db, `deliveryRatings/${uid}`));
+        }
+        document.getElementById('select-all-delivery').checked = false;
+        showToast(`${partnerUids.length} Delivery Partner(s) deleted successfully`, 'success');
+      } catch (err) {
+        showToast(err.message, 'danger');
+      }
+    };
+
+    window.deleteAllDeliveryPartners = async function() {
+      const totalCount = Object.keys(window.state.deliveryPartners).length;
+      if (totalCount === 0) {
+        showToast('No delivery partners available to delete', 'warning');
+        return;
+      }
+
+      if (!confirm(`⚠️ WARNING: Are you sure you want to PERMANENTLY DELETE ALL ${totalCount} DELIVERY PARTNERS from the system?`)) return;
+
+      try {
+        await remove(ref(db, 'deliveryPartners'));
+        await remove(ref(db, 'deliveryRatings'));
+        showToast('ALL Delivery Partners deleted successfully', 'success');
+      } catch (err) {
+        showToast(err.message, 'danger');
+      }
+    };
+
+    window.renderCustomers = function() {
+      const tbody = document.getElementById('customers-tbody');
+      const search = (document.getElementById('customer-search').value || '').toLowerCase();
+      const filter = document.getElementById('customer-filter').value;
+
+      const entries = Object.entries(window.state.customers).filter(([uid, c]) => {
+        const matchesSearch = (c.name || '').toLowerCase().includes(search) || (c.email || '').toLowerCase().includes(search) || (c.phone || '').includes(search) || uid.toLowerCase().includes(search);
+        const matchesFilter = filter === 'ALL' || (filter === 'BLOCKED' ? c.blocked === true : !c.blocked);
+        return matchesSearch && matchesFilter;
+      });
+
+      if (entries.length === 0) {
+        tbody.innerHTML = `<tr><td colspan="9" style="text-align:center; color: var(--text-muted);">No registered customers found.</td></tr>`;
+        renderPaginationUI('customers-pagination', 0, 'customers', 'renderCustomers');
+        return;
+      }
+
+      const page = window.currentPage.customers || 1;
+      const startIndex = (page - 1) * ITEMS_PER_PAGE;
+      const paginatedList = entries.slice(startIndex, startIndex + ITEMS_PER_PAGE);
+
+      tbody.innerHTML = paginatedList.map(([uid, c]) => `
+        <tr>
+          <td style="text-align: center;">
+            <input type="checkbox" class="customer-checkbox" value="${uid}">
+          </td>
+          <td><small style="color:var(--primary); font-weight:bold; background:#eef2ff; padding:2px 6px; border-radius:4px;">${uid}</small></td>
+          <td><strong>${c.name || 'N/A'}</strong></td>
+          <td>${c.email || 'N/A'}</td>
+          <td>${c.phone || 'N/A'}</td>
+          <td>${c.address || 'N/A'}</td>
+          <td>
+            <span class="badge ${c.blocked ? 'badge-danger' : 'badge-success'}">
+              ${c.blocked ? 'BLOCKED' : 'ACTIVE'}
+            </span>
+          </td>
+          <td>${c.createdAt ? new Date(c.createdAt).toLocaleDateString() : 'N/A'}</td>
+          <td>
+            <button class="btn btn-warning btn-sm" style="margin-right:4px;" onclick="toggleBlockCustomer('${uid}', ${!c.blocked})">
+              ${c.blocked ? 'Unblock' : 'Block'}
+            </button>
+            <button class="btn btn-danger btn-sm" style="background:#dc2626;" onclick="deleteCustomer('${uid}')">Delete</button>
+          </td>
+        </tr>
+      `).join('');
+
+      renderPaginationUI('customers-pagination', entries.length, 'customers', 'renderCustomers');
+    };
+
+    window.toggleSelectAllCustomers = function(mainCheckbox) {
+      const checkboxes = document.querySelectorAll('.customer-checkbox');
+      checkboxes.forEach(cb => cb.checked = mainCheckbox.checked);
+    };
+
+    window.toggleBlockCustomer = async function(uid, blockStatus) {
+      try {
+        await update(ref(db, `customers/${uid}`), { blocked: blockStatus, updatedAt: Date.now() });
+        showToast(`Customer account ${blockStatus ? 'blocked' : 'unblocked'} successfully`, 'success');
+      } catch (err) {
+        showToast(err.message, 'danger');
+      }
+    };
+
+    window.blockSelectedCustomers = async function() {
+      const selectedCheckboxes = document.querySelectorAll('.customer-checkbox:checked');
+      const customerUids = Array.from(selectedCheckboxes).map(cb => cb.value);
+
+      if (customerUids.length === 0) {
+        showToast('Please select at least one customer to block', 'warning');
+        return;
+      }
+
+      if (!confirm(`Are you sure you want to BLOCK ${customerUids.length} selected customer(s)?`)) return;
+
+      try {
+        for (const uid of customerUids) {
+          await update(ref(db, `customers/${uid}`), { blocked: true, updatedAt: Date.now() });
+        }
+        document.getElementById('select-all-customers').checked = false;
+        showToast(`${customerUids.length} Customer(s) blocked successfully`, 'success');
+      } catch (err) {
+        showToast(err.message, 'danger');
+      }
+    };
+
+    window.deleteCustomer = async function(uid) {
+      if (!confirm('Are you sure you want to PERMANENTLY delete this customer?')) return;
+      try {
+        await remove(ref(db, `customers/${uid}`));
+        showToast('Customer deleted successfully', 'success');
+      } catch (err) {
+        showToast(err.message, 'danger');
+      }
+    };
+
+    window.deleteSelectedCustomers = async function() {
+      const selectedCheckboxes = document.querySelectorAll('.customer-checkbox:checked');
+      const customerUids = Array.from(selectedCheckboxes).map(cb => cb.value);
+
+      if (customerUids.length === 0) {
+        showToast('Please select at least one customer to delete', 'warning');
+        return;
+      }
+
+      if (!confirm(`Are you sure you want to PERMANENTLY delete ${customerUids.length} selected customer(s)?`)) return;
+
+      try {
+        for (const uid of customerUids) {
+          await remove(ref(db, `customers/${uid}`));
+        }
+        document.getElementById('select-all-customers').checked = false;
+        showToast(`${customerUids.length} Customer(s) deleted successfully`, 'success');
+      } catch (err) {
+        showToast(err.message, 'danger');
+      }
+    };
+
+    window.deleteAllCustomers = async function() {
+      const totalCount = Object.keys(window.state.customers).length;
+      if (totalCount === 0) {
+        showToast('No customers available to delete', 'warning');
+        return;
+      }
+
+      if (!confirm(`⚠️ WARNING: Are you sure you want to PERMANENTLY DELETE ALL ${totalCount} CUSTOMERS from the system?`)) return;
+
+      try {
+        await remove(ref(db, 'customers'));
+        showToast('ALL Customers deleted successfully', 'success');
+      } catch (err) {
+        showToast(err.message, 'danger');
+      }
+    };
+
+    window.renderOrders = function() {
+      const tbody = document.getElementById('orders-tbody');
+      const search = (document.getElementById('order-search').value || '').toLowerCase();
+      const filter = document.getElementById('order-filter').value;
+
+      const entries = Object.entries(window.state.orders).filter(([id, o]) => {
+        const matchesSearch = (o.orderNumber || id).toLowerCase().includes(search);
+        const matchesFilter = filter === 'ALL' || o.status === filter;
+        return matchesSearch && matchesFilter;
+      });
+
+      if (entries.length === 0) {
+        tbody.innerHTML = `<tr><td colspan="8" style="text-align:center; color: var(--text-muted);">No orders match criteria.</td></tr>`;
+        renderPaginationUI('orders-pagination', 0, 'orders', 'renderOrders');
+        return;
+      }
+
+      const page = window.currentPage.orders || 1;
+      const startIndex = (page - 1) * ITEMS_PER_PAGE;
+      const paginatedList = entries.slice(startIndex, startIndex + ITEMS_PER_PAGE);
+
+      tbody.innerHTML = paginatedList.map(([id, o]) => {
+        const delPartner = window.state.deliveryPartners[o.deliveryUid];
+        
+        let statusBadge = `<span class="badge badge-info">${o.status}</span>`;
+        if (o.status === 'CANCELLED') {
+          statusBadge = `
+            <span class="badge badge-danger">CANCELLED</span><br>
+            <small style="color:var(--danger); font-weight:bold;">By: ${o.cancelledBy ? o.cancelledBy.replace(/_/g, ' ') : 'N/A'}</small><br>
+            <small style="color:var(--text-muted);">Reason: ${o.cancellationReason || 'N/A'}</small>
+          `;
+        }
+
+        return `
+          <tr>
+            <td style="text-align: center;">
+              <input type="checkbox" class="order-checkbox" value="${id}">
+            </td>
+            <td><strong>${o.orderNumber || id}</strong></td>
+            <td><small style="color: var(--text-muted);">${o.customerUid}</small></td>
+            <td><small style="color: var(--text-muted);">${o.restaurantId}</small></td>
+            <td><strong>₹${Number(o.totalAmount || 0).toFixed(2)}</strong></td>
+            <td>${statusBadge}</td>
+            <td>${delPartner ? `<span class="badge badge-success">${delPartner.name}</span>` : '<span class="badge badge-warning">Auto-Assigning...</span>'}</td>
+            <td>
+              <button class="btn btn-danger btn-sm" onclick="deleteSingleOrder('${id}')">Delete</button>
+            </td>
+          </tr>
+        `;
+      }).join('');
+
+      renderPaginationUI('orders-pagination', entries.length, 'orders', 'renderOrders');
+    };
+
+    window.toggleSelectAllOrders = function(mainCheckbox) {
+      const checkboxes = document.querySelectorAll('.order-checkbox');
+      checkboxes.forEach(cb => cb.checked = mainCheckbox.checked);
+    };
+
+    window.deleteSingleOrder = async function(orderId) {
+      if (!confirm(`Are you sure you want to PERMANENTLY delete Order #${orderId}?`)) return;
+
+      try {
+        await remove(ref(db, `orders/${orderId}`));
+        await remove(ref(db, `chats/${orderId}`));
+        showToast('Order permanently deleted from entire system', 'success');
+      } catch (err) {
+        showToast(err.message, 'danger');
+      }
+    };
+
+    window.deleteSelectedOrders = async function() {
+      const selectedCheckboxes = document.querySelectorAll('.order-checkbox:checked');
+      const orderIds = Array.from(selectedCheckboxes).map(cb => cb.value);
+
+      if (orderIds.length === 0) {
+        showToast('Please select at least one order to delete', 'warning');
+        return;
+      }
+
+      if (!confirm(`Are you sure you want to PERMANENTLY delete ${orderIds.length} selected order(s)?`)) return;
+
+      try {
+        for (const id of orderIds) {
+          await remove(ref(db, `orders/${id}`));
+          await remove(ref(db, `chats/${id}`));
+        }
+        document.getElementById('select-all-orders').checked = false;
+        showToast(`${orderIds.length} Order(s) deleted successfully`, 'success');
+      } catch (err) {
+        showToast(err.message, 'danger');
+      }
+    };
+
+    window.deleteAllOrders = async function() {
+      const totalOrders = Object.keys(window.state.orders).length;
+      if (totalOrders === 0) {
+        showToast('No orders available to delete', 'warning');
+        return;
+      }
+
+      if (!confirm(`⚠️ WARNING: Are you sure you want to PERMANENTLY DELETE ALL ${totalOrders} ORDERS from the database?`)) return;
+
+      try {
+        await remove(ref(db, 'orders'));
+        await remove(ref(db, 'chats'));
+        showToast('ALL orders have been completely deleted from system', 'success');
+      } catch (err) {
+        showToast(err.message, 'danger');
+      }
+    };
+
+    window.renderCoupons = function() {
+      const tbody = document.getElementById('coupons-tbody');
+      const entries = Object.entries(window.state.coupons);
+
+      if (entries.length === 0) {
+        tbody.innerHTML = `<tr><td colspan="5" style="text-align:center; color: var(--text-muted);">No active coupons created.</td></tr>`;
+        return;
+      }
+
+      tbody.innerHTML = entries.map(([id, c]) => `
+        <tr>
+          <td><strong>${c.code}</strong></td>
+          <td>₹${Number(c.discount).toFixed(2)}</td>
+          <td><span class="badge ${c.active ? 'badge-success' : 'badge-danger'}">${c.active ? 'YES' : 'NO'}</span></td>
+          <td>${c.expiry}</td>
+          <td>
+            <button class="btn btn-danger btn-sm" onclick="deleteCoupon('${id}')">Delete</button>
+          </td>
+        </tr>
+      `).join('');
+    };
+
+    window.openCouponModal = function() {
+      document.getElementById('coupon-modal').classList.remove('hidden');
+    };
+
+    window.saveCoupon = async function() {
+      const code = document.getElementById('coupon-code').value.trim().toUpperCase();
+      const discount = Number(document.getElementById('coupon-discount').value);
+      const expiry = document.getElementById('coupon-expiry').value;
+
+      if (!code || !discount || !expiry) {
+        showToast('All fields are required', 'danger');
+        return;
+      }
+
+      try {
+        const newRef = push(ref(db, 'coupons'));
+        await set(newRef, {
+          code: code,
+          discount: discount,
+          active: true,
+          expiry: expiry
+        });
+        showToast('Coupon created successfully', 'success');
+        closeModal('coupon-modal');
+      } catch (err) {
+        showToast(err.message, 'danger');
+      }
+    };
+
+    window.deleteCoupon = async function(id) {
+      try {
+        await set(ref(db, `coupons/${id}`), null);
+        showToast('Coupon deleted', 'success');
+      } catch (err) {
+        showToast(err.message, 'danger');
+      }
+    };
+
+    function renderNotifications() {
+      const tbody = document.getElementById('notifications-tbody');
+      if (!tbody) return;
+
+      const pendingRest = Object.entries(window.state.restaurants).filter(([_, r]) => !r.approved);
+      const pendingRiders = Object.entries(window.state.deliveryPartners).filter(([_, d]) => !d.approved);
+
+      if (pendingRest.length === 0 && pendingRiders.length === 0) {
+        tbody.innerHTML = `<tr><td colspan="5" style="text-align:center; color: var(--text-muted);">No pending applications.</td></tr>`;
+        return;
+      }
+
+      let rowsHtml = '';
+      pendingRest.forEach(([uid, r]) => {
+        rowsHtml += `
+          <tr>
+            <td><span class="badge badge-warning">RESTAURANT</span></td>
+            <td><strong>${r.name || 'N/A'}</strong></td>
+            <td>${r.email || 'N/A'}</td>
+            <td><span class="badge badge-warning">PENDING APPROVAL</span></td>
+            <td><button class="btn btn-primary btn-sm" onclick="switchTab('restaurants')">Review & Approve</button></td>
+          </tr>
+        `;
+      });
+
+      pendingRiders.forEach(([uid, d]) => {
+        rowsHtml += `
+          <tr>
+            <td><span class="badge badge-info">DELIVERY BOY</span></td>
+            <td><strong>${d.name || 'N/A'}</strong></td>
+            <td>${d.email || 'N/A'}</td>
+            <td><span class="badge badge-warning">PENDING APPROVAL</span></td>
+            <td><button class="btn btn-primary btn-sm" onclick="switchTab('delivery')">Review & Approve</button></td>
+          </tr>
+        `;
+      });
+
+      tbody.innerHTML = rowsHtml;
+    }
+
+    let dailyChart = null;
+    let revenueChart = null;
+
+    function renderCharts() {
+      const reportsPanel = document.getElementById('panel-reports');
+      if (reportsPanel && reportsPanel.classList.contains('hidden')) return;
+
+      const orders = Object.values(window.state.orders);
+
+      const datesCount = {};
+      const datesRevenue = {};
+
+      orders.forEach(o => {
+        if (o.createdAt) {
+          const d = new Date(o.createdAt).toLocaleDateString();
+          datesCount[d] = (datesCount[d] || 0) + 1;
+          if (o.status === 'DELIVERED') {
+            datesRevenue[d] = (datesRevenue[d] || 0) + Number(o.totalAmount || 0);
+          }
+        }
+      });
+
+      const labels = Object.keys(datesCount);
+      const countData = Object.values(datesCount);
+      const revenueData = labels.map(l => datesRevenue[l] || 0);
+
+      Chart.defaults.color = '#64748b';
+      Chart.defaults.borderColor = '#e2e8f0';
+
+      const canvas1 = document.getElementById('chart-daily-orders');
+      if (canvas1) {
+        const ctx1 = canvas1.getContext('2d');
+        if (dailyChart) dailyChart.destroy();
+        dailyChart = new Chart(ctx1, {
+          type: 'bar',
+          data: {
+            labels: labels,
+            datasets: [{
+              label: 'Orders Count',
+              data: countData,
+              backgroundColor: '#4f46e5',
+              borderRadius: 8
+            }]
+          },
+          options: { responsive: true }
+        });
+      }
+
+      const canvas2 = document.getElementById('chart-revenue');
+      if (canvas2) {
+        const ctx2 = canvas2.getContext('2d');
+        if (revenueChart) revenueChart.destroy();
+        revenueChart = new Chart(ctx2, {
+          type: 'line',
+          data: {
+            labels: labels,
+            datasets: [{
+              label: 'COD Revenue (₹)',
+              data: revenueData,
+              borderColor: '#10b981',
+              backgroundColor: 'rgba(16, 185, 129, 0.1)',
+              tension: 0.3,
+              fill: true
+            }]
+          },
+          options: { responsive: true }
+        });
+      }
+    }
+
+    window.closeModal = function(id) {
+      document.getElementById(id).classList.add('hidden');
+    };
+
+    if (typeof lucide !== 'undefined') {
+      lucide.createIcons();
+    }
+  </script>
+</body>
+</html>

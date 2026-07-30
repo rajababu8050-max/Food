@@ -1,0 +1,1327 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Hunger Food - Restaurant Partner Panel</title>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <style>
+    :root {
+      --primary: #ff4757;
+      --primary-hover: #e03f4e;
+      --primary-soft: #fff1f2;
+      --bg-body: #f8fafc;
+      --bg-card: #ffffff;
+      --bg-dark: #f1f5f9;
+      --text-main: #0f172a;
+      --text-muted: #64748b;
+      --border-color: #e2e8f0;
+      --success: #10b981;
+      --success-soft: #ecfdf5;
+      --warning: #f59e0b;
+      --warning-soft: #fffbeb;
+      --danger: #ef4444;
+      --danger-soft: #fef2f2;
+      --info: #3b82f6;
+      --info-soft: #eff6ff;
+      --shadow-sm: 0 1px 3px rgba(0,0,0,0.05), 0 1px 2px rgba(0,0,0,0.1);
+      --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.07), 0 2px 4px -1px rgba(0, 0, 0, 0.04);
+      --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.08), 0 4px 6px -2px rgba(0, 0, 0, 0.03);
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; }
+    body { background-color: var(--bg-body); color: var(--text-main); min-height: 100vh; display: flex; flex-direction: column; -webkit-font-smoothing: antialiased; }
+    .hidden { display: none !important; }
+    .flex-center { display: flex; align-items: center; justify-content: center; }
+    .flex-between { display: flex; align-items: center; justify-content: space-between; }
+    .flex { display: flex; }
+    .gap-2 { gap: 8px; }
+
+    /* FULL PAGE LOADER OVERLAY TO PREVENT REFRESH FLICKERING */
+    #page-loader {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100vw;
+      height: 100vh;
+      background: var(--bg-body);
+      z-index: 99999;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 16px;
+    }
+    .spinner {
+      width: 44px;
+      height: 44px;
+      border: 4px solid var(--border-color);
+      border-top-color: var(--primary);
+      border-radius: 50%;
+      animation: spin 0.8s linear infinite;
+    }
+    @keyframes spin {
+      to { transform: rotate(360deg); }
+    }
+
+    /* Toast Notifications */
+    #toast-container { position: fixed; top: 20px; right: 20px; z-index: 9999; }
+    .toast { background: var(--bg-card); color: var(--text-main); padding: 14px 20px; margin-bottom: 10px; border-radius: 10px; border-left: 4px solid var(--primary); box-shadow: var(--shadow-lg); font-weight: 500; font-size: 14px; animation: slideIn 0.3s cubic-bezier(0.16, 1, 0.3, 1) forwards; border-top: 1px solid var(--border-color); border-right: 1px solid var(--border-color); border-bottom: 1px solid var(--border-color); }
+    .toast.success { border-left-color: var(--success); }
+    .toast.danger { border-left-color: var(--danger); }
+    .toast.warning { border-left-color: var(--warning); }
+    @keyframes slideIn { from { transform: translateX(100%); opacity: 0; } to { transform: translateX(0); opacity: 1; } }
+
+    /* Auth Views */
+    .auth-container { width: 100vw; min-height: 100vh; background: linear-gradient(135deg, #f1f5f9 0%, #e2e8f0 100%); display: flex; justify-content: center; align-items: center; padding: 24px; }
+    .auth-card { background: var(--bg-card); padding: 36px; border-radius: 16px; width: 100%; max-width: 480px; box-shadow: var(--shadow-lg); border: 1px solid var(--border-color); }
+    .auth-card h2 { text-align: center; margin-bottom: 24px; color: var(--primary); font-size: 24px; font-weight: 700; }
+    
+    .form-group { margin-bottom: 18px; }
+    .form-group label { display: block; margin-bottom: 6px; color: var(--text-muted); font-size: 13px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px; }
+    .form-control { width: 100%; padding: 11px 14px; border-radius: 8px; border: 1px solid var(--border-color); background: #ffffff; color: var(--text-main); font-size: 14px; outline: none; transition: all 0.2s ease; }
+    .form-control:focus { border-color: var(--primary); box-shadow: 0 0 0 3px rgba(255, 71, 87, 0.15); }
+    
+    .checkbox-label { display: flex; align-items: center; gap: 10px; font-size: 14px; color: var(--text-main); cursor: pointer; margin-bottom: 14px; }
+    
+    /* Buttons */
+    .btn { padding: 11px 20px; border-radius: 8px; border: none; cursor: pointer; font-weight: 600; font-size: 14px; transition: all 0.2s ease; display: inline-flex; align-items: center; justify-content: center; gap: 6px; }
+    .btn:hover { transform: translateY(-1px); }
+    .btn:active { transform: translateY(0); }
+    .btn-primary { background: var(--primary); color: white; width: 100%; box-shadow: 0 4px 12px rgba(255, 71, 87, 0.25); }
+    .btn-primary:hover { background: var(--primary-hover); }
+    .btn-outline { background: transparent; border: 1px solid var(--border-color); color: var(--text-main); width: 100%; margin-top: 10px; }
+    .btn-outline:hover { background: #f1f5f9; border-color: #cbd5e1; }
+    .btn-sm { padding: 7px 14px; font-size: 12px; width: auto; border-radius: 6px; }
+    .btn-success { background: var(--success); color: white; }
+    .btn-danger { background: var(--danger); color: white; }
+    .btn-warning { background: var(--warning); color: #ffffff; }
+    .btn-info { background: var(--info); color: white; }
+    .btn-location { background: var(--warning-soft); color: #b45309; border: 1px solid #fde68a; margin-bottom: 10px; width: 100%; padding: 10px 14px; font-size: 13px; font-weight: 600; }
+    .btn-location:hover { background: #fef3c7; }
+
+    /* Dashboard Layout */
+    #dashboard-view { display: flex; flex-direction: column; min-height: 100vh; background: var(--bg-body); }
+    .topbar { height: 64px; background: var(--bg-card); border-bottom: 1px solid var(--border-color); display: flex; align-items: center; justify-content: space-between; padding: 0 32px; position: sticky; top: 0; z-index: 100; box-shadow: var(--shadow-sm); }
+    .topbar-brand { font-size: 20px; font-weight: 800; color: var(--primary); letter-spacing: -0.5px; }
+    .topbar-status { display: flex; align-items: center; gap: 20px; }
+
+    /* Switches */
+    .switch { position: relative; display: inline-block; width: 44px; height: 24px; }
+    .switch input { opacity: 0; width: 0; height: 0; }
+    .slider { position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0; background-color: #cbd5e1; transition: .3s; border-radius: 24px; }
+    .slider:before { position: absolute; content: ""; height: 18px; width: 18px; left: 3px; bottom: 3px; background-color: white; transition: .3s; border-radius: 50%; box-shadow: var(--shadow-sm); }
+    input:checked + .slider { background-color: var(--success); }
+    input:checked + .slider:before { transform: translateX(20px); }
+
+    /* Nav Tabs */
+    .nav-tabs { background: var(--bg-card); display: flex; border-bottom: 1px solid var(--border-color); padding: 0 24px; overflow-x: auto; gap: 8px; }
+    .tab-btn { padding: 16px 20px; color: var(--text-muted); background: transparent; border: none; font-weight: 600; font-size: 14px; cursor: pointer; border-bottom: 3px solid transparent; white-space: nowrap; transition: all 0.2s; }
+    .tab-btn:hover { color: var(--text-main); }
+    .tab-btn.active { color: var(--primary); border-bottom-color: var(--primary); background: transparent; }
+
+    /* Main Area & Cards */
+    .content-area { padding: 32px 24px; flex: 1; max-width: 1200px; margin: 0 auto; width: 100%; }
+    .grid-cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 20px; margin-bottom: 28px; }
+    
+    .card { background: var(--bg-card); border-radius: 12px; padding: 22px; border: 1px solid var(--border-color); box-shadow: var(--shadow-sm); transition: transform 0.2s, box-shadow 0.2s; }
+    .card:hover { box-shadow: var(--shadow-md); }
+    .card h4 { font-size: 12px; color: var(--text-muted); margin-bottom: 8px; text-transform: uppercase; font-weight: 700; letter-spacing: 0.5px; }
+    .card .value { font-size: 28px; font-weight: 800; color: var(--text-main); }
+
+    /* Orders View */
+    .order-card { background: var(--bg-card); border-radius: 12px; padding: 20px; border: 1px solid var(--border-color); margin-bottom: 18px; box-shadow: var(--shadow-sm); }
+    .order-header { display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--border-color); padding-bottom: 12px; margin-bottom: 12px; }
+    .order-body ul { list-style: none; margin: 12px 0; background: var(--bg-body); padding: 12px; border-radius: 8px; }
+    .order-body li { display: flex; justify-content: space-between; font-size: 14px; margin-bottom: 6px; font-weight: 500; }
+    .order-body li:last-child { margin-bottom: 0; }
+    .order-actions { display: flex; gap: 10px; margin-top: 16px; flex-wrap: wrap; }
+
+    /* Food Menu Grid */
+    .food-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 24px; }
+    .food-card { background: var(--bg-card); border-radius: 12px; overflow: hidden; border: 1px solid var(--border-color); display: flex; flex-direction: column; box-shadow: var(--shadow-sm); transition: transform 0.2s, box-shadow 0.2s; }
+    .food-card:hover { transform: translateY(-3px); box-shadow: var(--shadow-md); }
+    .food-img { width: 100%; height: 160px; object-fit: cover; background: #e2e8f0; }
+    .food-body { padding: 16px; flex: 1; display: flex; flex-direction: column; justify-content: space-between; }
+    .food-title { font-size: 16px; font-weight: 700; margin-bottom: 4px; color: var(--text-main); }
+    .food-desc { font-size: 13px; color: var(--text-muted); margin-bottom: 12px; line-height: 1.4; }
+
+    /* Badges */
+    .badge { padding: 5px 10px; border-radius: 6px; font-size: 12px; font-weight: 700; display: inline-block; }
+    .badge-success { background: var(--success-soft); color: #047857; }
+    .badge-danger { background: var(--danger-soft); color: #dc2626; }
+    .badge-info { background: var(--info-soft); color: #1d4ed8; }
+
+    /* Modals */
+    .modal { position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: rgba(15, 23, 42, 0.4); backdrop-filter: blur(4px); display: flex; align-items: center; justify-content: center; z-index: 1000; overflow-y: auto; padding: 20px; }
+    .modal-content { background: var(--bg-card); border-radius: 16px; padding: 28px; width: 100%; max-width: 540px; border: 1px solid var(--border-color); max-height: 90vh; overflow-y: auto; box-shadow: var(--shadow-lg); }
+    .modal-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; border-bottom: 1px solid var(--border-color); padding-bottom: 12px; }
+    .modal-header h3 { font-size: 18px; font-weight: 700; color: var(--text-main); }
+    .modal-close { cursor: pointer; font-size: 22px; color: var(--text-muted); transition: color 0.2s; }
+    .modal-close:hover { color: var(--text-main); }
+    
+    .profile-img-preview { width: 100%; height: 180px; object-fit: cover; border-radius: 10px; margin-bottom: 16px; border: 1px solid var(--border-color); background: #f1f5f9; }
+    .original-price-strike { text-decoration: line-through; color: var(--text-muted); font-size: 13px; margin-right: 6px; }
+
+    .file-upload-box { border: 2px dashed #cbd5e1; padding: 16px; border-radius: 8px; text-align: center; background: #f8fafc; cursor: pointer; margin-bottom: 10px; transition: all 0.2s; }
+    .file-upload-box:hover { border-color: var(--primary); background: var(--primary-soft); }
+    .img-upload-preview { width: 100%; height: 130px; object-fit: cover; border-radius: 8px; margin-top: 10px; border: 1px solid var(--border-color); }
+  </style>
+</head>
+<body>
+
+  <!-- Full-Page Loading Overlay (Prevents Refresh Flickering) -->
+  <div id="page-loader">
+    <div class="spinner"></div>
+    <div style="font-weight: 700; color: var(--text-muted); font-size: 14px;">Loading Partner Portal...</div>
+  </div>
+
+  <audio id="order-sound" src="https://assets.mixkit.co/active_storage/sfx/2869/2869-preview.mp3" preload="auto"></audio>
+  <div id="toast-container"></div>
+
+  <!-- AUTHENTICATION (Hidden initially) -->
+  <div id="auth-wrapper" class="hidden">
+    <div id="login-view" class="auth-container">
+      <div class="auth-card">
+        <h2>Partner Portal Login</h2>
+        <form id="login-form">
+          <div class="form-group">
+            <label>Email Address</label>
+            <input type="email" id="login-email" class="form-control" required placeholder="restaurant@hungerfood.com">
+          </div>
+          <div class="form-group">
+            <label>Password</label>
+            <input type="password" id="login-password" class="form-control" required placeholder="••••••••">
+          </div>
+          <button type="submit" class="btn btn-primary">Login to Partner Portal</button>
+        </form>
+        <button class="btn btn-outline" onclick="switchAuth('signup')">Register New Restaurant</button>
+      </div>
+    </div>
+
+    <div id="signup-view" class="auth-container hidden">
+      <div class="auth-card">
+        <h2>Register Restaurant</h2>
+        <form id="signup-form">
+          <div class="form-group">
+            <label>Restaurant Name</label>
+            <input type="text" id="signup-name" class="form-control" required placeholder="Tasty Bites Diner">
+          </div>
+          <div class="form-group">
+            <label>Email Address</label>
+            <input type="email" id="signup-email" class="form-control" required placeholder="partner@tastybites.com">
+          </div>
+          <div class="form-group">
+            <label>Cuisine Types</label>
+            <input type="text" id="signup-cuisine" class="form-control" required placeholder="Italian, North Indian, Fast Food">
+          </div>
+          
+          <div class="form-group">
+            <label>Restaurant Banner Image Options</label>
+            <div class="file-upload-box" onclick="document.getElementById('signup-file-input').click();">
+              📁 <strong style="color:var(--text-main);">Upload Restaurant Banner from Device</strong>
+              <input type="file" id="signup-file-input" accept="image/*" class="hidden" onchange="handleRestaurantFileUpload(event, 'signup-image', 'signup-img-preview')">
+            </div>
+            <img id="signup-img-preview" class="img-upload-preview hidden" src="">
+            <div style="text-align:center; color:var(--text-muted); margin: 6px 0; font-size:12px; font-weight:600;">— OR PASTE IMAGE URL —</div>
+            <input type="url" id="signup-image" class="form-control" placeholder="https://images.unsplash.com/photo-1555396273-367ea4eb4db5" oninput="updatePreviewFromUrl(this.value, 'signup-img-preview')">
+          </div>
+          
+          <div class="form-group">
+            <label>Physical Address</label>
+            <button type="button" class="btn btn-location" onclick="fetchLocationForField('signup')">
+              📍 Set Exact Restaurant GPS Location (1-Click)
+            </button>
+            <textarea id="signup-address" class="form-control" required placeholder="Full physical street address"></textarea>
+          </div>
+          
+          <label class="checkbox-label">
+            <input type="checkbox" id="signup-always-open" onchange="toggleAlwaysOpen('signup')">
+            <span><strong>Always Open (24x7)</strong></span>
+          </label>
+
+          <div style="display: flex; gap: 10px;">
+            <div class="form-group" style="flex:1;">
+              <label>Opening Time</label>
+              <input type="time" id="signup-open" class="form-control" required value="09:00">
+            </div>
+            <div class="form-group" style="flex:1;">
+              <label>Closing Time</label>
+              <input type="time" id="signup-close" class="form-control" required value="23:00">
+            </div>
+          </div>
+          <div style="display: flex; gap: 10px;">
+            <div class="form-group" style="flex:1;">
+              <label>Min. Order Amount (₹)</label>
+              <input type="number" id="signup-min-order" class="form-control" required placeholder="150" value="100">
+            </div>
+            <div class="form-group" style="flex:1;">
+              <label>Delivery Charge (₹)</label>
+              <input type="number" id="signup-del-charge" class="form-control" required placeholder="30" value="30">
+            </div>
+          </div>
+          <div class="form-group">
+            <label>Password</label>
+            <input type="password" id="signup-password" class="form-control" required placeholder="••••••••">
+          </div>
+          <button type="submit" class="btn btn-primary">Submit for Approval</button>
+        </form>
+        <button class="btn btn-outline" onclick="switchAuth('login')">Back to Login</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="pending-approval-view" class="hidden">
+    <div class="auth-card" style="text-align: center; margin: 40px auto;">
+      <h2 style="color: var(--warning);">Approval Pending</h2>
+      <p style="color: var(--text-muted); font-size: 14px; margin-bottom: 20px;">Your restaurant account registration has been submitted successfully. Admin approval is required before you can access order management and menu controls.</p>
+      <button class="btn btn-danger" onclick="logoutPartner()">Logout</button>
+    </div>
+  </div>
+
+  <div id="dashboard-view" class="hidden">
+    <header class="topbar">
+      <div class="topbar-brand" id="restaurant-display-name">Hunger Food Partner</div>
+      <div class="topbar-status">
+        <div class="flex-center" style="gap: 8px;">
+          <span style="font-size: 13px; color: var(--text-muted); font-weight: 600;">Store Open:</span>
+          <label class="switch">
+            <input type="checkbox" id="toggle-is-open" onchange="updateStoreStatus()">
+            <span class="slider"></span>
+          </label>
+        </div>
+        <div class="flex-center" style="gap: 8px;">
+          <span style="font-size: 13px; color: var(--text-muted); font-weight: 600;">Busy Mode:</span>
+          <label class="switch">
+            <input type="checkbox" id="toggle-busy" onchange="updateStoreStatus()">
+            <span class="slider"></span>
+          </label>
+        </div>
+        <button class="btn btn-danger btn-sm" onclick="logoutPartner()">Logout</button>
+      </div>
+    </header>
+
+    <nav class="nav-tabs">
+      <button class="tab-btn active" onclick="switchTab('orders', this)">Orders Management</button>
+      <button class="tab-btn" onclick="switchTab('menu', this)">Menu Management</button>
+      <button class="tab-btn" onclick="switchTab('reports', this)">Sales & Reports</button>
+      <button class="tab-btn" onclick="switchTab('profile', this)">Profile Settings</button>
+    </nav>
+
+    <main class="content-area">
+      <section id="tab-orders">
+        <div class="grid-cards">
+          <div class="card">
+            <h4>Active Orders</h4>
+            <div class="value" id="stat-active-orders">0</div>
+          </div>
+          <div class="card">
+            <h4>Today's Total Orders</h4>
+            <div class="value" id="stat-today-orders">0</div>
+          </div>
+        </div>
+        <h3 style="font-size: 18px; font-weight: 700; margin-bottom: 16px;">Incoming & Active Orders</h3>
+        <div id="orders-container">Loading orders...</div>
+      </section>
+
+      <section id="tab-menu" class="hidden">
+        <div class="flex-between" style="margin-bottom: 24px;">
+          <h3 style="font-size: 18px; font-weight: 700;">Restaurant Menu</h3>
+          <button class="btn btn-primary" style="width: auto;" onclick="openFoodModal()">+ Add New Food Item</button>
+        </div>
+        <div class="food-grid" id="food-items-grid">Loading menu...</div>
+      </section>
+
+      <section id="tab-reports" class="hidden">
+        <div class="grid-cards">
+          <div class="card">
+            <h4>Today's Revenue</h4>
+            <div class="value" id="stat-today-sales">₹0.00</div>
+          </div>
+          <div class="card">
+            <h4>Weekly Revenue</h4>
+            <div class="value" id="stat-weekly-sales">₹0.00</div>
+          </div>
+          <div class="card">
+            <h4>Monthly Revenue</h4>
+            <div class="value" id="stat-monthly-sales">₹0.00</div>
+          </div>
+          <div class="card">
+            <h4>Lifetime Revenue</h4>
+            <div class="value" id="stat-total-sales">₹0.00</div>
+          </div>
+        </div>
+        <div class="card">
+          <h4>Revenue Analytics (₹)</h4>
+          <canvas id="chart-restaurant-sales" style="margin-top: 16px;"></canvas>
+        </div>
+      </section>
+
+      <section id="tab-profile" class="hidden">
+        <div class="auth-card" style="max-width: 600px; margin: 0 auto; box-shadow: var(--shadow-sm);">
+          <h3 style="font-size: 18px; font-weight: 700; margin-bottom: 20px;">Update Profile Settings</h3>
+          <img id="profile-img-preview-tag" src="https://images.unsplash.com/photo-1555396273-367ea4eb4db5?w=500" class="profile-img-preview">
+
+          <div class="form-group">
+            <label>Restaurant Name</label>
+            <input type="text" id="profile-name" class="form-control">
+          </div>
+          <div class="form-group">
+            <label>Cuisine Categories</label>
+            <input type="text" id="profile-cuisine" class="form-control">
+          </div>
+
+          <div class="form-group">
+            <label>Restaurant Banner Photo Options</label>
+            <div class="file-upload-box" onclick="document.getElementById('profile-file-input').click();">
+              📁 <strong style="color:var(--text-main);">Upload New Image from Device</strong>
+              <input type="file" id="profile-file-input" accept="image/*" class="hidden" onchange="handleRestaurantFileUpload(event, 'profile-image', 'profile-img-preview-tag')">
+            </div>
+            
+            <div style="text-align:center; color:var(--text-muted); margin: 6px 0; font-size:12px; font-weight:600;">— OR PASTE IMAGE URL —</div>
+            
+            <input type="url" id="profile-image" class="form-control" placeholder="https://images.unsplash.com/photo-..." oninput="updateProfileImagePreview(this.value)">
+          </div>
+          
+          <div class="form-group">
+            <label>Physical Address</label>
+            <button type="button" class="btn btn-location" onclick="fetchLocationForField('profile')">
+              📍 Update Exact Restaurant GPS Location (1-Click)
+            </button>
+            <textarea id="profile-address" class="form-control" rows="3"></textarea>
+          </div>
+
+          <label class="checkbox-label">
+            <input type="checkbox" id="profile-always-open" onchange="toggleAlwaysOpen('profile')">
+            <span><strong>Always Open (24x7)</strong></span>
+          </label>
+
+          <div style="display: flex; gap: 10px;">
+            <div class="form-group" style="flex:1;">
+              <label>Opening Time</label>
+              <input type="time" id="profile-open" class="form-control">
+            </div>
+            <div class="form-group" style="flex:1;">
+              <label>Closing Time</label>
+              <input type="time" id="profile-close" class="form-control">
+            </div>
+          </div>
+          <div style="display: flex; gap: 10px;">
+            <div class="form-group" style="flex:1;">
+              <label>Minimum Order (₹)</label>
+              <input type="number" id="profile-min-order" class="form-control">
+            </div>
+            <div class="form-group" style="flex:1;">
+              <label>Delivery Charge (₹)</label>
+              <input type="number" id="profile-del-charge" class="form-control">
+            </div>
+          </div>
+          <button class="btn btn-primary" onclick="updateProfile()">Save Profile Changes</button>
+        </div>
+      </section>
+    </main>
+  </div>
+
+  <!-- RESTAURANT CANCELLATION REASON MODAL -->
+  <div id="restaurant-cancel-modal" class="modal hidden">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h3 style="font-size:16px; font-weight:700; color:var(--danger);">Reject / Cancel Order</h3>
+        <span class="modal-close" onclick="closeModal('restaurant-cancel-modal')">&times;</span>
+      </div>
+      <input type="hidden" id="rest-cancel-order-id">
+      
+      <div class="form-group">
+        <label>Select Reason for Cancellation</label>
+        <select id="rest-cancel-reason-select" class="form-control" style="font-weight:600;" onchange="toggleRestCustomReason(this.value)">
+          <option value="Ordered Item Out of Stock">📦 Ordered Item(s) Out of Stock</option>
+          <option value="Restaurant Too Busy / Overloaded">🔥 Restaurant Too Busy / Kitchen Overloaded</option>
+          <option value="Restaurant Closing Soon / Kitchen Closed">🛑 Restaurant Closing Soon / Kitchen Closed</option>
+          <option value="Delivery Address Out of Coverage">📍 Delivery Address Out of Coverage Area</option>
+          <option value="OTHER">✍️ Other Reason (Write below)</option>
+        </select>
+      </div>
+
+      <div class="form-group hidden" id="rest-custom-reason-box">
+        <label>Specify Reason Details</label>
+        <textarea id="rest-custom-reason-text" class="form-control" placeholder="Mention why order is being cancelled..."></textarea>
+      </div>
+
+      <button class="btn btn-danger" style="width:100%; padding:12px;" onclick="submitRestaurantCancellation()">Confirm & Reject Order</button>
+    </div>
+  </div>
+
+  <!-- ADD / EDIT FOOD ITEM MODAL -->
+  <div id="food-modal" class="modal hidden">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h3 id="food-modal-title">Add Food Item</h3>
+        <span class="modal-close" onclick="closeModal('food-modal')">&times;</span>
+      </div>
+      <input type="hidden" id="food-item-id">
+      
+      <!-- Veg / Non-Veg Selection -->
+      <div class="form-group">
+        <label>Food Type</label>
+        <select id="food-type" class="form-control" style="font-weight:bold;">
+          <option value="VEG">🟢 Veg</option>
+          <option value="NON_VEG">🔴 Non-Veg</option>
+        </select>
+      </div>
+
+      <!-- MENU CATEGORY SELECT DROPDOWN -->
+      <div class="form-group">
+        <label>Menu Category</label>
+        <select id="food-category" class="form-control" style="font-weight:bold;">
+          <option value="Main Course">🍲 Main Course</option>
+          <option value="Starters">🍢 Starters</option>
+          <option value="Fast Food">🍔 Fast Food</option>
+          <option value="Beverages">🥤 Beverages</option>
+          <option value="Desserts">🍨 Desserts</option>
+          <option value="Breads & Rice">🍚 Breads & Rice</option>
+        </select>
+      </div>
+
+      <div class="form-group">
+        <label>Item Name</label>
+        <input type="text" id="food-name" class="form-control" placeholder="Paneer Tikka / Chicken Pizza">
+      </div>
+      <div class="form-group">
+        <label>Description</label>
+        <textarea id="food-desc" class="form-control" placeholder="Delicious grilled paneer with spices"></textarea>
+      </div>
+
+      <div style="display: flex; gap: 10px;">
+        <div class="form-group" style="flex:1;">
+          <label>Base Original Price (₹)</label>
+          <input type="number" id="food-original-price" class="form-control" placeholder="300" oninput="calculateDiscountedPrice()">
+        </div>
+        <div class="form-group" style="flex:1;">
+          <label>Discount (%)</label>
+          <input type="number" id="food-discount-percent" class="form-control" placeholder="10" value="0" min="0" max="100" oninput="calculateDiscountedPrice()">
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label>Base Selling Price (Calculated ₹)</label>
+        <input type="number" id="food-price" class="form-control" placeholder="270" readonly style="background:#f1f5f9; font-weight:bold; color:var(--success);">
+      </div>
+
+      <!-- VARIANTS SECTION (SIZES) -->
+      <div class="form-group" style="border:1px solid var(--border-color); padding:14px; border-radius:10px; background:#f8fafc;">
+        <label style="font-weight:bold; color:var(--primary);">Variants / Sizes (Optional)</label>
+        <p style="font-size:12px; color:var(--text-muted); margin-bottom:8px;">e.g., Small, Medium, Large ya Half / Full with price</p>
+        <div id="variants-container"></div>
+        <button type="button" class="btn btn-sm btn-outline" onclick="addVariantRow()" style="margin-top:6px; background:#fff;">+ Add Size Variant</button>
+      </div>
+
+      <!-- ADD-ONS SECTION (EXTRAS) -->
+      <div class="form-group" style="border:1px solid var(--border-color); padding:14px; border-radius:10px; background:#f8fafc;">
+        <label style="font-weight:bold; color:var(--success);">Extra Add-ons (Optional)</label>
+        <p style="font-size:12px; color:var(--text-muted); margin-bottom:8px;">e.g., Extra Cheese (₹30), Extra Dip (₹20)</p>
+        <div id="addons-container"></div>
+        <button type="button" class="btn btn-sm btn-outline" onclick="addAddonRow()" style="margin-top:6px; background:#fff;">+ Add Extra Add-on</button>
+      </div>
+
+      <div class="form-group">
+        <label>Food Item Photo Options</label>
+        <div class="file-upload-box" onclick="document.getElementById('food-file-input').click();">
+          📁 <strong style="color:var(--text-main);">Choose Local Image File from Device</strong>
+          <input type="file" id="food-file-input" accept="image/*" class="hidden" onchange="handleFoodImageFileUpload(event)">
+        </div>
+        <img id="food-modal-img-preview" class="img-upload-preview hidden" src="">
+        
+        <div style="text-align:center; color:var(--text-muted); margin: 6px 0; font-size:12px; font-weight:600;">— OR PASTE IMAGE URL —</div>
+        
+        <input type="url" id="food-image" class="form-control" placeholder="https://images.unsplash.com/photo-..." oninput="previewPastedUrl(this.value)">
+      </div>
+
+      <div class="form-group">
+        <label>Availability Status</label>
+        <select id="food-available" class="form-control">
+          <option value="true">Available</option>
+          <option value="false">Not Available (Out of Stock)</option>
+        </select>
+      </div>
+
+      <button class="btn btn-primary" onclick="saveFoodItem()">Save Food Item</button>
+    </div>
+  </div>
+
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
+    import { getAuth, signInWithEmailAndPassword, createUserWithEmailAndPassword, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
+    import { getDatabase, ref, set, get, update, push, remove, onValue } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-database.js";
+
+    const firebaseConfig = {
+      apiKey: "AIzaSyA9RmU8Fc96wvfN9S3nRzhDJF518XzK7fI",
+      authDomain: "food-4c911.firebaseapp.com",
+      databaseURL: "https://food-4c911-default-rtdb.firebaseio.com",
+      projectId: "food-4c911",
+      storageBucket: "food-4c911.firebasestorage.app",
+      messagingSenderId: "334589277094",
+      appId: "1:334589277094:web:95fc7dc6a298eb08031567"
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const auth = getAuth(app);
+    const db = getDatabase(app);
+
+    window.state = { 
+      user: null, 
+      restaurant: null, 
+      menu: {}, 
+      orders: {}, 
+      deliveryPartners: {},
+      geoCoords: { lat: null, lng: null }
+    };
+    
+    let previousPlacedOrderIds = null;
+
+    // Helper to hide loader overlay smoothly
+    function hideLoader() {
+      const loader = document.getElementById('page-loader');
+      if (loader) loader.classList.add('hidden');
+    }
+
+    // Normalize status helper to ensure casing matches across app
+    window.normalizeStatus = function(statusStr) {
+      if (!statusStr) return 'PLACED';
+      const clean = statusStr.toString().trim().toUpperCase();
+      if (clean === 'PENDING' || clean === 'ORDER_PLACED') return 'PLACED';
+      if (clean === 'CONFIRMED' || clean === 'ACCEPT') return 'ACCEPTED';
+      if (clean === 'PREPARATION' || clean === 'COOKING') return 'PREPARING';
+      if (clean === 'READY') return 'READY_FOR_PICKUP';
+      if (clean === 'DISPATCHED' || clean === 'ON_THE_WAY') return 'OUT_FOR_DELIVERY';
+      return clean;
+    };
+
+    window.getCategoryIcon = function(catName) {
+      const map = {
+        'Main Course': '🍲',
+        'Starters': '🍢',
+        'Fast Food': '🍔',
+        'Beverages': '🥤',
+        'Desserts': '🍨',
+        'Breads & Rice': '🍚'
+      };
+      return map[catName] || '🍽️';
+    };
+
+    window.showToast = function(msg, type = 'info') {
+      const c = document.getElementById('toast-container');
+      const t = document.createElement('div');
+      t.className = `toast ${type}`;
+      t.innerText = msg;
+      c.appendChild(t);
+      setTimeout(() => t.remove(), 3500);
+    };
+
+    window.handleRestaurantFileUpload = function(event, targetInputId, previewTagId) {
+      const file = event.target.files[0];
+      if (!file) return;
+
+      if (file.size > 2 * 1024 * 1024) {
+        showToast("Image size should be less than 2MB for fast loading", "warning");
+      }
+
+      const reader = new FileReader();
+      reader.onload = function(e) {
+        const base64Data = e.target.result;
+        document.getElementById(targetInputId).value = base64Data;
+        
+        const preview = document.getElementById(previewTagId);
+        if (preview) {
+          preview.src = base64Data;
+          preview.classList.remove('hidden');
+        }
+        showToast("📷 Restaurant image selected successfully!", "success");
+      };
+      reader.readAsDataURL(file);
+    };
+
+    window.updatePreviewFromUrl = function(url, previewTagId) {
+      const preview = document.getElementById(previewTagId);
+      if (preview) {
+        if (url && url.trim() !== '') {
+          preview.src = url;
+          preview.classList.remove('hidden');
+        } else {
+          preview.classList.add('hidden');
+        }
+      }
+    };
+
+    window.handleFoodImageFileUpload = function(event) {
+      const file = event.target.files[0];
+      if (!file) return;
+
+      if (file.size > 2 * 1024 * 1024) {
+        showToast("Image size should be less than 2MB for fast loading", "warning");
+      }
+
+      const reader = new FileReader();
+      reader.onload = function(e) {
+        const base64Data = e.target.result;
+        document.getElementById('food-image').value = base64Data;
+        
+        const preview = document.getElementById('food-modal-img-preview');
+        preview.src = base64Data;
+        preview.classList.remove('hidden');
+        showToast("📷 Food image selected successfully!", "success");
+      };
+      reader.readAsDataURL(file);
+    };
+
+    window.previewPastedUrl = function(url) {
+      const preview = document.getElementById('food-modal-img-preview');
+      if (url && url.trim() !== '') {
+        preview.src = url;
+        preview.classList.remove('hidden');
+      } else {
+        preview.classList.add('hidden');
+      }
+    };
+
+    /* ========================================================= */
+    /* 1-CLICK CURRENT GPS LOCATION FETCH FOR PROFILE & SIGNUP   */
+    /* ========================================================= */
+    window.fetchLocationForField = function(prefix) {
+      const addressInput = document.getElementById(`${prefix}-address`);
+      if (addressInput) addressInput.value = "Detecting live GPS location...";
+
+      if (!navigator.geolocation) {
+        showToast("GPS is not supported on this browser.", "danger");
+        return;
+      }
+
+      navigator.geolocation.getCurrentPosition(
+        async (position) => {
+          const lat = position.coords.latitude;
+          const lng = position.coords.longitude;
+          window.state.geoCoords = { lat, lng };
+
+          try {
+            const res = await fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lng}`);
+            const data = await res.json();
+            const fullAddress = data.display_name || `Lat: ${lat.toFixed(4)}, Lng: ${lng.toFixed(4)}`;
+            if (addressInput) addressInput.value = fullAddress;
+            showToast("📍 Restaurant GPS location acquired successfully!", "success");
+          } catch (err) {
+            const fallbackAddress = `Lat: ${lat.toFixed(4)}, Lng: ${lng.toFixed(4)}`;
+            if (addressInput) addressInput.value = fallbackAddress;
+            showToast("📍 Restaurant GPS location acquired!", "success");
+          }
+        },
+        (err) => {
+          showToast("GPS Error: " + err.message, "danger");
+          if (addressInput) addressInput.value = "";
+        },
+        { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }
+      );
+    };
+
+    window.calculateDiscountedPrice = function() {
+      const original = Number(document.getElementById('food-original-price').value) || 0;
+      let discount = Number(document.getElementById('food-discount-percent').value) || 0;
+      if (discount < 0) discount = 0;
+      if (discount > 100) discount = 100;
+
+      const sellingPrice = original - (original * (discount / 100));
+      document.getElementById('food-price').value = Math.max(0, sellingPrice).toFixed(2);
+    };
+
+    window.updateProfileImagePreview = function(url) {
+      const previewTag = document.getElementById('profile-img-preview-tag');
+      previewTag.src = (url && url.trim() !== '') ? url : "https://images.unsplash.com/photo-1555396273-367ea4eb4db5?w=500";
+    };
+
+    window.toggleAlwaysOpen = function(prefix) {
+      const isAlwaysOpen = document.getElementById(`${prefix}-always-open`).checked;
+      const openInput = document.getElementById(`${prefix}-open`);
+      const closeInput = document.getElementById(`${prefix}-close`);
+
+      if (isAlwaysOpen) {
+        openInput.value = "00:00"; closeInput.value = "23:59";
+        openInput.disabled = true; closeInput.disabled = true;
+      } else {
+        openInput.disabled = false; closeInput.disabled = false;
+        openInput.value = "09:00"; closeInput.value = "23:00";
+      }
+    };
+
+    window.playOrderSound = function() {
+      const audio = document.getElementById('order-sound');
+      if (audio) { 
+        audio.currentTime = 0; 
+        audio.play().catch(e => console.log("Audio play blocked until user interacts:", e)); 
+      }
+    };
+
+    window.addVariantRow = function(name = '', price = '') {
+      const container = document.getElementById('variants-container');
+      const div = document.createElement('div');
+      div.className = 'variant-row flex gap-2';
+      div.style.marginBottom = '6px';
+      div.innerHTML = `
+        <input type="text" class="form-control variant-name" placeholder="Size (e.g. Medium / Full)" value="${name}">
+        <input type="number" class="form-control variant-price" placeholder="Price ₹" value="${price}" style="width:120px;">
+        <button type="button" class="btn btn-danger btn-sm" onclick="this.parentElement.remove()">✕</button>
+      `;
+      container.appendChild(div);
+    };
+
+    window.addAddonRow = function(name = '', price = '') {
+      const container = document.getElementById('addons-container');
+      const div = document.createElement('div');
+      div.className = 'addon-row flex gap-2';
+      div.style.marginBottom = '6px';
+      div.innerHTML = `
+        <input type="text" class="form-control addon-name" placeholder="Add-on (e.g. Extra Cheese)" value="${name}">
+        <input type="number" class="form-control addon-price" placeholder="Price ₹" value="${price}" style="width:120px;">
+        <button type="button" class="btn btn-danger btn-sm" onclick="this.parentElement.remove()">✕</button>
+      `;
+      container.appendChild(div);
+    };
+
+    window.switchAuth = function(view) {
+      if (view === 'signup') {
+        document.getElementById('login-view').classList.add('hidden');
+        document.getElementById('signup-view').classList.remove('hidden');
+      } else {
+        document.getElementById('signup-view').classList.add('hidden');
+        document.getElementById('login-view').classList.remove('hidden');
+      }
+    };
+
+    document.getElementById('login-form').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      try {
+        await signInWithEmailAndPassword(auth, document.getElementById('login-email').value, document.getElementById('login-password').value);
+      } catch (err) { showToast(err.message, 'danger'); }
+    });
+
+    document.getElementById('signup-form').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const email = document.getElementById('signup-email').value;
+      const pass = document.getElementById('signup-password').value;
+      const name = document.getElementById('signup-name').value;
+      const cuisine = document.getElementById('signup-cuisine').value;
+      const imageUrl = document.getElementById('signup-image').value.trim() || 'https://images.unsplash.com/photo-1555396273-367ea4eb4db5?w=500';
+      const address = document.getElementById('signup-address').value;
+      const alwaysOpen = document.getElementById('signup-always-open').checked;
+      const openTime = alwaysOpen ? "00:00" : document.getElementById('signup-open').value;
+      const closeTime = alwaysOpen ? "23:59" : document.getElementById('signup-close').value;
+      const minOrder = Number(document.getElementById('signup-min-order').value);
+      const delCharge = Number(document.getElementById('signup-del-charge').value);
+
+      try {
+        const cred = await createUserWithEmailAndPassword(auth, email, pass);
+        const uid = cred.user.uid;
+        await set(ref(db, `restaurants/${uid}`), {
+          name, email, cuisine, imageUrl, address, alwaysOpen,
+          openingTime: openTime, closingTime: closeTime,
+          minimumOrderAmount: minOrder, deliveryCharge: delCharge,
+          lat: window.state.geoCoords.lat || 28.6139,
+          lng: window.state.geoCoords.lng || 77.2090,
+          approved: false, online: true, busy: false, isOpen: true,
+          createdAt: Date.now(), updatedAt: Date.now()
+        });
+        showToast('Registration submitted for approval', 'warning');
+      } catch (err) { showToast(err.message, 'danger'); }
+    });
+
+    // SECURE AUTH STATE LISTENER (PREVENTS REFRESH FLICKERING)
+    onAuthStateChanged(auth, async (user) => {
+      if (user) {
+        window.state.user = user;
+
+        onValue(ref(db, `restaurants/${user.uid}`), async (snapshot) => {
+          if (!snapshot.exists()) {
+            await signOut(auth);
+            showToast('❌ Account not found! Please contact admin.', 'danger');
+            document.getElementById('auth-wrapper').classList.remove('hidden');
+            document.getElementById('pending-approval-view').classList.add('hidden');
+            document.getElementById('dashboard-view').classList.add('hidden');
+            hideLoader();
+            return;
+          }
+
+          const data = snapshot.val();
+          window.state.restaurant = data;
+          if (data.lat && data.lng) {
+            window.state.geoCoords = { lat: data.lat, lng: data.lng };
+          }
+
+          document.getElementById('auth-wrapper').classList.add('hidden');
+
+          if (!data.approved) {
+            document.getElementById('pending-approval-view').classList.remove('hidden');
+            document.getElementById('dashboard-view').classList.add('hidden');
+          } else {
+            document.getElementById('pending-approval-view').classList.add('hidden');
+            document.getElementById('dashboard-view').classList.remove('hidden');
+            document.getElementById('restaurant-display-name').innerText = data.name || "Restaurant Partner";
+            document.getElementById('toggle-is-open').checked = data.isOpen !== false;
+            document.getElementById('toggle-busy').checked = data.busy === true;
+
+            document.getElementById('profile-name').value = data.name || '';
+            document.getElementById('profile-cuisine').value = data.cuisine || '';
+            document.getElementById('profile-image').value = data.imageUrl || '';
+            updateProfileImagePreview(data.imageUrl || '');
+            document.getElementById('profile-address').value = data.address || '';
+            document.getElementById('profile-always-open').checked = data.alwaysOpen === true;
+            toggleAlwaysOpen('profile');
+            if (!data.alwaysOpen) {
+              document.getElementById('profile-open').value = data.openingTime || '09:00';
+              document.getElementById('profile-close').value = data.closingTime || '23:00';
+            }
+            document.getElementById('profile-min-order').value = data.minimumOrderAmount || 100;
+            document.getElementById('profile-del-charge').value = data.deliveryCharge || 30;
+
+            attachRealtimeListeners(user.uid);
+          }
+          hideLoader();
+        });
+      } else {
+        document.getElementById('auth-wrapper').classList.remove('hidden');
+        document.getElementById('pending-approval-view').classList.add('hidden');
+        document.getElementById('dashboard-view').classList.add('hidden');
+        hideLoader();
+      }
+    });
+
+    window.logoutPartner = async function() {
+      await signOut(auth);
+      showToast('Logged out successfully');
+    };
+
+    function attachRealtimeListeners(uid) {
+      onValue(ref(db, `menus/${uid}`), (snapshot) => {
+        window.state.menu = snapshot.val() || {};
+        renderMenu();
+      });
+
+      onValue(ref(db, 'deliveryPartners'), (snapshot) => {
+        window.state.deliveryPartners = snapshot.val() || {};
+      });
+
+      onValue(ref(db, 'orders'), (snapshot) => {
+        const allOrders = snapshot.val() || {};
+        const myOrders = Object.entries(allOrders).filter(([_, o]) => o.restaurantId === uid);
+        window.state.orders = Object.fromEntries(myOrders);
+
+        const currentPlacedOrderIds = new Set(
+          myOrders.filter(([_, o]) => window.normalizeStatus(o.status) === 'PLACED').map(([id]) => id)
+        );
+
+        if (previousPlacedOrderIds !== null) {
+          let hasNewPlacedOrder = false;
+          currentPlacedOrderIds.forEach(id => {
+            if (!previousPlacedOrderIds.has(id)) {
+              hasNewPlacedOrder = true;
+            }
+          });
+
+          if (hasNewPlacedOrder) {
+            window.playOrderSound();
+            showToast(`🔔 New Customer Order Received!`, 'success');
+          }
+        }
+
+        previousPlacedOrderIds = currentPlacedOrderIds;
+
+        renderOrders();
+        renderReports();
+      });
+    }
+
+    async function getAvailableRiderUid() {
+      const partners = window.state.deliveryPartners;
+      const activeRiders = Object.entries(partners).filter(([uid, d]) => d.approved === true && d.online === true);
+      if (activeRiders.length === 0) return "";
+      const randomIndex = Math.floor(Math.random() * activeRiders.length);
+      return activeRiders[randomIndex][0];
+    }
+
+    window.updateStoreStatus = async function() {
+      try {
+        await update(ref(db, `restaurants/${window.state.user.uid}`), {
+          isOpen: document.getElementById('toggle-is-open').checked,
+          busy: document.getElementById('toggle-busy').checked,
+          updatedAt: Date.now()
+        });
+        showToast('Store status updated', 'success');
+      } catch (err) { showToast(err.message, 'danger'); }
+    };
+
+    window.switchTab = function(tabName, btnEl) {
+      ['orders', 'menu', 'reports', 'profile'].forEach(t => document.getElementById(`tab-${t}`).classList.add('hidden'));
+      document.getElementById(`tab-${tabName}`).classList.remove('hidden');
+      document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
+      if (btnEl) btnEl.classList.add('active');
+
+      if (tabName === 'reports') {
+        renderReports();
+      }
+    };
+
+    function renderOrders() {
+      const container = document.getElementById('orders-container');
+      const entries = Object.entries(window.state.orders).reverse();
+      
+      const activeCount = entries.filter(([_, o]) => ['PLACED', 'ACCEPTED', 'PREPARING'].includes(window.normalizeStatus(o.status))).length;
+      document.getElementById('stat-active-orders').innerText = activeCount;
+      document.getElementById('stat-today-orders').innerText = entries.length;
+
+      if (entries.length === 0) {
+        container.innerHTML = `<div class="card"><p style="text-align:center; color:var(--text-muted);">No orders received yet.</p></div>`;
+        return;
+      }
+
+      container.innerHTML = entries.map(([id, o]) => {
+        const normStatus = window.normalizeStatus(o.status);
+        return `
+          <div class="order-card">
+            <div class="order-header">
+              <div><strong>Order #${o.orderNumber || id}</strong><span class="badge ${normStatus === 'CANCELLED' ? 'badge-danger' : 'badge-info'}" style="margin-left:8px;">${normStatus.replace(/_/g, ' ')}</span></div>
+              <div><strong style="font-size: 16px; color: var(--text-main);">Total: ₹${Number(o.totalAmount || 0).toFixed(2)}</strong></div>
+            </div>
+            <div class="order-body">
+              <p style="font-size:13px; color:var(--text-muted); font-weight:500;">Phone: ${o.phone || 'N/A'} | Address: ${o.address || 'N/A'}</p>
+              <ul>${(o.items || []).map(i => {
+                const variantText = i.selectedVariant ? ` (${i.selectedVariant.name})` : '';
+                const addonsText = i.selectedAddons && i.selectedAddons.length > 0 ? ` + [${i.selectedAddons.map(a => a.name).join(', ')}]` : '';
+                return `<li><span>${i.name}${variantText}${addonsText} x ${i.qty}</span><span>₹${(i.price * i.qty).toFixed(2)}</span></li>`;
+              }).join('')}</ul>
+            </div>
+
+            ${['READY_FOR_PICKUP', 'PREPARING'].includes(normStatus) ? `
+              <div style="background:var(--warning-soft); color:#b45309; border:1px solid #fde68a; padding:12px 16px; border-radius:8px; margin-top:12px; font-weight:bold; font-size:14px; text-align:center;">
+                🔑 Pickup Verification OTP for Delivery Partner: <span style="font-size:18px; text-decoration:underline; letter-spacing:2px; color:#d97706;">${o.pickupOtp || 'N/A'}</span>
+              </div>
+            ` : ''}
+
+            ${normStatus === 'CANCELLED' ? `
+              <div style="margin-top:10px; background:#fee2e2; color:#b91c1c; padding:10px; border-radius:8px; font-size:13px; font-weight:600;">
+                ❌ Order Cancelled ${o.cancelledBy ? `by ${o.cancelledBy.replace(/_/g, ' ')}` : ''}<br>
+                <strong>Reason:</strong> ${o.cancellationReason || 'No specific reason provided'}
+              </div>
+            ` : ''}
+
+            <div class="order-actions">
+              ${normStatus === 'PLACED' ? `
+                <button class="btn btn-success btn-sm" onclick="updateOrderStatus('${id}', 'ACCEPTED')">Accept Order</button>
+                <button class="btn btn-danger btn-sm" onclick="openRestaurantCancelModal('${id}')">Reject Order with Reason</button>
+              ` : ''}
+              ${normStatus === 'ACCEPTED' ? `
+                <button class="btn btn-info btn-sm" onclick="updateOrderStatus('${id}', 'PREPARING')">Mark Preparing</button>
+                <button class="btn btn-danger btn-sm" onclick="openRestaurantCancelModal('${id}')">Cancel Order</button>
+              ` : ''}
+              ${normStatus === 'PREPARING' ? `<button class="btn btn-warning btn-sm" onclick="updateOrderStatus('${id}', 'READY_FOR_PICKUP')">Mark Ready For Pickup</button>` : ''}
+            </div>
+          </div>
+        `;
+      }).join('');
+    }
+
+    window.toggleRestCustomReason = function(val) {
+      const box = document.getElementById('rest-custom-reason-box');
+      if (val === 'OTHER') {
+        box.classList.remove('hidden');
+      } else {
+        box.classList.add('hidden');
+      }
+    };
+
+    window.openRestaurantCancelModal = function(orderId) {
+      document.getElementById('rest-cancel-order-id').value = orderId;
+      document.getElementById('rest-cancel-reason-select').value = "Ordered Item Out of Stock";
+      document.getElementById('rest-custom-reason-box').classList.add('hidden');
+      document.getElementById('rest-custom-reason-text').value = '';
+      document.getElementById('restaurant-cancel-modal').classList.remove('hidden');
+    };
+
+    window.submitRestaurantCancellation = async function() {
+      const orderId = document.getElementById('rest-cancel-order-id').value;
+      const reasonSelect = document.getElementById('rest-cancel-reason-select').value;
+      let finalReason = reasonSelect;
+
+      if (reasonSelect === 'OTHER') {
+        finalReason = document.getElementById('rest-custom-reason-text').value.trim();
+        if (!finalReason) {
+          showToast('Please enter the reason for rejection', 'danger');
+          return;
+        }
+      }
+
+      try {
+        await update(ref(db, `orders/${orderId}`), {
+          status: 'CANCELLED',
+          cancelledBy: 'RESTAURANT',
+          cancellationReason: finalReason,
+          updatedAt: Date.now()
+        });
+
+        closeModal('restaurant-cancel-modal');
+        showToast('Order cancelled and reason notified to Customer & Admin', 'success');
+      } catch (err) {
+        showToast(err.message, 'danger');
+      }
+    };
+
+    window.updateOrderStatus = async function(orderId, newStatus) {
+      try {
+        const updateData = { 
+          status: newStatus.toUpperCase().trim(), 
+          updatedAt: Date.now() 
+        };
+
+        const order = window.state.orders[orderId];
+        if (order && !order.deliveryUid) {
+          const riderUid = await getAvailableRiderUid();
+          if (riderUid) updateData.deliveryUid = riderUid;
+        }
+
+        await update(ref(db, `orders/${orderId}`), updateData);
+        showToast(`Order status updated to ${newStatus}`, 'success');
+      } catch (err) { showToast(err.message, 'danger'); }
+    };
+
+    function renderMenu() {
+      const grid = document.getElementById('food-items-grid');
+      const items = Object.entries(window.state.menu);
+
+      if (items.length === 0) {
+        grid.innerHTML = `<p style="color:var(--text-muted);">No food items created yet. Click "+ Add New Food Item" above.</p>`;
+        return;
+      }
+
+      grid.innerHTML = items.map(([itemId, item]) => {
+        const origPrice = Number(item.originalPrice || item.price);
+        const discountPct = Number(item.discountPercent || 0);
+        const typeBadge = item.foodType === 'NON_VEG' ? '🔴 Non-Veg' : '🟢 Veg';
+        const categoryBadge = item.category || 'Main Course';
+        const catIcon = window.getCategoryIcon(categoryBadge);
+
+        return `
+          <div class="food-card">
+            <img src="${item.imageUrl || 'https://images.unsplash.com/photo-1546069901-ba9599a7e63c?w=400'}" class="food-img">
+            <div class="food-body">
+              <div>
+                <div style="display:flex; justify-content:space-between; font-size:12px; font-weight:bold; margin-bottom:6px;">
+                  <span style="color:${item.foodType === 'NON_VEG' ? '#ef4444' : '#10b981'};">${typeBadge}</span>
+                  <span style="color:var(--info); background:var(--info-soft); padding:3px 8px; border-radius:6px;">${catIcon} ${categoryBadge}</span>
+                </div>
+                <div class="food-title">${item.name}</div>
+                <div class="food-desc">${item.description || ''}</div>
+                
+                <div style="margin-bottom:10px;">
+                  ${discountPct > 0 ? `<strike class="original-price-strike">₹${origPrice.toFixed(2)}</strike>` : ''}
+                  <span style="font-weight:800; color:var(--primary); font-size:18px;">₹${Number(item.price).toFixed(2)}</span>
+                  ${discountPct > 0 ? `<span class="badge badge-success" style="margin-left:6px;">${discountPct}% OFF</span>` : ''}
+                </div>
+
+                <div>
+                  <span class="badge ${item.available ? 'badge-success' : 'badge-danger'}">
+                    ${item.available ? 'Available' : 'Out of Stock'}
+                  </span>
+                </div>
+              </div>
+              <div style="display:flex; gap:8px; margin-top:16px;">
+                <button class="btn btn-info btn-sm" style="flex:1;" onclick="openFoodModal('${itemId}')">Edit</button>
+                <button class="btn btn-danger btn-sm" style="flex:1;" onclick="deleteFoodItem('${itemId}')">Delete</button>
+              </div>
+            </div>
+          </div>
+        `;
+      }).join('');
+    }
+
+    window.openFoodModal = function(itemId = null) {
+      document.getElementById('food-item-id').value = itemId || '';
+      document.getElementById('food-file-input').value = '';
+      document.getElementById('variants-container').innerHTML = '';
+      document.getElementById('addons-container').innerHTML = '';
+      const preview = document.getElementById('food-modal-img-preview');
+
+      if (itemId && window.state.menu[itemId]) {
+        const item = window.state.menu[itemId];
+        document.getElementById('food-modal-title').innerText = "Edit Food Item";
+        document.getElementById('food-type').value = item.foodType || 'VEG';
+        document.getElementById('food-category').value = item.category || 'Main Course';
+        document.getElementById('food-name').value = item.name;
+        document.getElementById('food-desc').value = item.description || '';
+        document.getElementById('food-original-price').value = item.originalPrice || item.price;
+        document.getElementById('food-discount-percent').value = item.discountPercent || 0;
+        document.getElementById('food-price').value = item.price;
+        document.getElementById('food-image').value = item.imageUrl || '';
+        document.getElementById('food-available').value = item.available ? "true" : "false";
+
+        if (item.variants && item.variants.length > 0) {
+          item.variants.forEach(v => addVariantRow(v.name, v.price));
+        }
+
+        if (item.addons && item.addons.length > 0) {
+          item.addons.forEach(a => addAddonRow(a.name, a.price));
+        }
+
+        if (item.imageUrl) {
+          preview.src = item.imageUrl;
+          preview.classList.remove('hidden');
+        } else {
+          preview.classList.add('hidden');
+        }
+      } else {
+        document.getElementById('food-modal-title').innerText = "Add Food Item";
+        document.getElementById('food-type').value = 'VEG';
+        document.getElementById('food-category').value = 'Main Course';
+        document.getElementById('food-name').value = '';
+        document.getElementById('food-desc').value = '';
+        document.getElementById('food-original-price').value = '';
+        document.getElementById('food-discount-percent').value = 0;
+        document.getElementById('food-price').value = '';
+        document.getElementById('food-image').value = '';
+        document.getElementById('food-available').value = "true";
+        preview.classList.add('hidden');
+      }
+      document.getElementById('food-modal').classList.remove('hidden');
+    };
+
+    window.saveFoodItem = async function() {
+      const itemId = document.getElementById('food-item-id').value;
+      const foodType = document.getElementById('food-type').value;
+      const category = document.getElementById('food-category').value || 'Main Course';
+      const name = document.getElementById('food-name').value.trim();
+      const description = document.getElementById('food-desc').value.trim();
+      const originalPrice = Number(document.getElementById('food-original-price').value);
+      const discountPercent = Number(document.getElementById('food-discount-percent').value) || 0;
+      const price = Number(document.getElementById('food-price').value) || originalPrice;
+      const imageUrl = document.getElementById('food-image').value.trim();
+      const available = document.getElementById('food-available').value === "true";
+
+      if (!name || !originalPrice) {
+        showToast('Name and Base Original Price are required', 'danger');
+        return;
+      }
+
+      const variants = Array.from(document.querySelectorAll('.variant-row')).map(row => ({
+        name: row.querySelector('.variant-name').value.trim(),
+        price: Number(row.querySelector('.variant-price').value) || 0
+      })).filter(v => v.name !== '');
+
+      const addons = Array.from(document.querySelectorAll('.addon-row')).map(row => ({
+        name: row.querySelector('.addon-name').value.trim(),
+        price: Number(row.querySelector('.addon-price').value) || 0
+      })).filter(a => a.name !== '');
+
+      const uid = window.state.user.uid;
+      const foodData = {
+        foodType, category, name, description, originalPrice, discountPercent, price, imageUrl, available,
+        variants, addons,
+        updatedAt: Date.now()
+      };
+
+      try {
+        if (itemId) {
+          await update(ref(db, `menus/${uid}/${itemId}`), foodData);
+          showToast('Food item updated', 'success');
+        } else {
+          foodData.createdAt = Date.now();
+          const newRef = push(ref(db, `menus/${uid}`));
+          await set(newRef, foodData);
+          showToast('Food item added', 'success');
+        }
+        closeModal('food-modal');
+      } catch (err) { showToast(err.message, 'danger'); }
+    };
+
+    window.deleteFoodItem = async function(itemId) {
+      if (!confirm('Are you sure you want to delete this item?')) return;
+      try {
+        await remove(ref(db, `menus/${window.state.user.uid}/${itemId}`));
+        showToast('Food item removed', 'success');
+      } catch (err) { showToast(err.message, 'danger'); }
+    };
+
+    /* ========================================================= */
+    /* UPDATED PROFILE SAVE FUNCTION WITH EXACT GPS UPDATES      */
+    /* ========================================================= */
+    window.updateProfile = async function() {
+      const name = document.getElementById('profile-name').value.trim();
+      const cuisine = document.getElementById('profile-cuisine').value.trim();
+      const imageUrl = document.getElementById('profile-image').value.trim();
+      const address = document.getElementById('profile-address').value.trim();
+      const alwaysOpen = document.getElementById('profile-always-open').checked;
+      const openTime = alwaysOpen ? "00:00" : document.getElementById('profile-open').value;
+      const closeTime = alwaysOpen ? "23:59" : document.getElementById('profile-close').value;
+      const minOrder = Number(document.getElementById('profile-min-order').value);
+      const delCharge = Number(document.getElementById('profile-del-charge').value);
+
+      const updatePayload = {
+        name, cuisine, imageUrl, address, alwaysOpen,
+        openingTime: openTime, closingTime: closeTime,
+        minimumOrderAmount: minOrder, deliveryCharge: delCharge,
+        isOpen: alwaysOpen ? true : document.getElementById('toggle-is-open').checked,
+        updatedAt: Date.now()
+      };
+
+      // Guaranteed Lat/Lng Update from State
+      if (window.state.geoCoords && window.state.geoCoords.lat && window.state.geoCoords.lng) {
+        updatePayload.lat = window.state.geoCoords.lat;
+        updatePayload.lng = window.state.geoCoords.lng;
+      }
+
+      try {
+        await update(ref(db, `restaurants/${window.state.user.uid}`), updatePayload);
+        showToast('📍 Profile and GPS location updated successfully!', 'success');
+      } catch (err) { showToast(err.message, 'danger'); }
+    };
+
+    let salesChart = null;
+    function renderReports() {
+      const reportsSection = document.getElementById('tab-reports');
+      if (reportsSection && reportsSection.classList.contains('hidden')) return;
+
+      const orders = Object.values(window.state.orders).filter(o => window.normalizeStatus(o.status) === 'DELIVERED');
+      const now = new Date();
+      let todaySales = 0, weeklySales = 0, monthlySales = 0, totalSales = 0;
+      const dailyRevenueMap = {};
+
+      orders.forEach(o => {
+        const amt = Number(o.totalAmount || 0);
+        totalSales += amt;
+        if (o.createdAt) {
+          const orderDate = new Date(o.createdAt);
+          const dateStr = orderDate.toLocaleDateString();
+          dailyRevenueMap[dateStr] = (dailyRevenueMap[dateStr] || 0) + amt;
+          if (orderDate.toDateString() === now.toDateString()) todaySales += amt;
+          if ((now - orderDate) <= 7 * 24 * 60 * 60 * 1000) weeklySales += amt;
+          if (orderDate.getMonth() === now.getMonth() && orderDate.getFullYear() === now.getFullYear()) monthlySales += amt;
+        }
+      });
+
+      document.getElementById('stat-today-sales').innerText = `₹${todaySales.toFixed(2)}`;
+      document.getElementById('stat-weekly-sales').innerText = `₹${weeklySales.toFixed(2)}`;
+      document.getElementById('stat-monthly-sales').innerText = `₹${monthlySales.toFixed(2)}`;
+      document.getElementById('stat-total-sales').innerText = `₹${totalSales.toFixed(2)}`;
+
+      const canvas = document.getElementById('chart-restaurant-sales');
+      if (!canvas) return;
+
+      const ctx = canvas.getContext('2d');
+      if (salesChart) salesChart.destroy();
+      salesChart = new Chart(ctx, {
+        type: 'line',
+        data: {
+          labels: Object.keys(dailyRevenueMap),
+          datasets: [{ label: 'Sales (₹)', data: Object.values(dailyRevenueMap), borderColor: '#ff4757', backgroundColor: 'rgba(255, 71, 87, 0.08)', fill: true, tension: 0.3 }]
+        },
+        options: { responsive: true, plugins: { legend: { display: false } } }
+      });
+    }
+
+    window.closeModal = function(id) { document.getElementById(id).classList.add('hidden'); };
+  </script>
+</body>
+</html>
