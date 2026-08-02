@@ -2030,15 +2030,32 @@
       if (orders.length === 0) {
         container.innerHTML = `<p style="text-align:center; color:var(--text-muted); padding:20px;">No orders found.</p>`; return;
       }
+
+      // Custom Date & Time Formatter (DD/MM/YYYY, HH:MM AM/PM - without seconds)
+      const formatCustomDateTime = (timestamp) => {
+        if (!timestamp) return 'N/A';
+        const d = new Date(timestamp);
+        const day = String(d.getDate()).padStart(2, '0');
+        const month = String(d.getMonth() + 1).padStart(2, '0');
+        const year = d.getFullYear();
+        
+        let hours = d.getHours();
+        const minutes = String(d.getMinutes()).padStart(2, '0');
+        const ampm = hours >= 12 ? 'PM' : 'AM';
+        hours = hours % 12;
+        hours = hours ? hours : 12; // 0 hour ko 12 banana
+        const strHours = String(hours).padStart(2, '0');
+
+        return `${day}/${month}/${year}, ${strHours}:${minutes} ${ampm}`;
+      };
+
       container.innerHTML = orders.map(([id, o]) => {
         const normStatus = window.normalizeStatus(o.status);
         const isDelivered = normStatus === 'DELIVERED';
 
-        // Order Placement Date & Time
-        const orderDateStr = o.createdAt ? new Date(o.createdAt).toLocaleString() : 'N/A';
-        
-        // Order Delivered Date & Time
-        const deliveredDateStr = isDelivered && o.updatedAt ? new Date(o.updatedAt).toLocaleString() : null;
+        // Custom Formatted Date & Time
+        const orderDateStr = formatCustomDateTime(o.createdAt);
+        const deliveredDateStr = isDelivered && o.updatedAt ? formatCustomDateTime(o.updatedAt) : null;
 
         return `
           <div class="restaurant-card" style="padding:16px;" onclick="openOrderTracking('${id}')">
@@ -2047,7 +2064,7 @@
               <span class="badge ${isDelivered ? 'badge-success' : 'badge-danger'}">${normStatus.replace(/_/g, ' ')}</span>
             </div>
 
-            <!-- Order Date and Time Details -->
+            <!-- Order Date & Time Details Below Order ID -->
             <div style="font-size:12px; color:var(--text-muted); margin-top:6px; line-height:1.5;">
               <div>📅 <strong>Order Placed:</strong> ${orderDateStr}</div>
               ${deliveredDateStr ? `<div style="color:var(--success); font-weight:600;">✅ <strong>Delivered On:</strong> ${deliveredDateStr}</div>` : ''}
