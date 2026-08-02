@@ -2156,7 +2156,57 @@
       let statusHeaderHtml = '';
       let mapSectionHtml = '';
       let ratingSectionHtml = '';
-      let orderSummaryCardHtml = ''; // Active/In-progress orders me hide rahega
+      
+      // ITEM DETAILS BREAKDOWN (ORDER SUMMARY WITH RESTAURANT DETAILS)
+      const itemsListHtml = (o.items || []).map(i => {
+        const variantStr = i.selectedVariant ? ` (${i.selectedVariant.name})` : '';
+        const addonsStr = i.selectedAddons && i.selectedAddons.length > 0 ? `<br><span style="font-size:11px; color:var(--text-muted);">+ ${i.selectedAddons.map(a => a.name).join(', ')}</span>` : '';
+        return `
+          <div class="flex justify-between items-center" style="padding: 8px 0; border-bottom: 1px dashed var(--border-color); font-size: 13px;">
+            <div>
+              <strong>${i.name}${variantStr}</strong> x ${i.qty}
+              ${addonsStr}
+            </div>
+            <strong style="color:var(--text-main);">₹${(Number(i.price) * i.qty).toFixed(2)}</strong>
+          </div>
+        `;
+      }).join('');
+
+      const orderSummaryCardHtml = `
+        <div style="background:var(--bg-card); padding:18px; border-radius:var(--radius-md); border:1px solid var(--border-color); margin-top:16px; box-shadow:var(--shadow-sm);">
+          <div style="margin-bottom:10px; border-bottom:1px solid var(--border-color); padding-bottom:8px;">
+            <h4 style="font-size:15px; font-weight:700; color:var(--primary);">🏬 ${restaurantName}</h4>
+            <p style="font-size:12px; color:var(--text-muted); margin-top:2px;">📍 ${restaurantInfo.address || 'Local Outlet'}</p>
+          </div>
+
+          <div class="flex justify-between items-center" style="margin-bottom:8px;">
+            <strong style="font-size:14px; color:var(--text-main);">🛒 Ordered Items Summary</strong>
+            <span style="font-size:12px; color:var(--text-muted); font-weight:600;">${(o.items || []).length} Items</span>
+          </div>
+
+          <div style="margin-bottom: 12px;">
+            ${itemsListHtml}
+          </div>
+
+          <div style="font-size: 12px; color: var(--text-muted); line-height: 1.6; background: #f8fafc; padding: 12px; border-radius: var(--radius-sm);">
+            <div class="flex justify-between"><span>Subtotal:</span> <span>₹${Number(o.subtotal || 0).toFixed(2)}</span></div>
+            <div class="flex justify-between"><span>Delivery Charge:</span> <span>₹${Number(o.deliveryCharge || 0).toFixed(2)}</span></div>
+            <div class="flex justify-between"><span>GST / Tax:</span> <span>₹${Number(o.tax || 0).toFixed(2)}</span></div>
+            ${Number(o.discount || 0) > 0 ? `<div class="flex justify-between" style="color:var(--success);"><span>Discount:</span> <span>-₹${Number(o.discount).toFixed(2)}</span></div>` : ''}
+            <hr style="margin: 6px 0; border:0; border-top:1px solid var(--border-color);">
+            <div class="flex justify-between" style="font-size: 14px; font-weight: 700; color: var(--text-main);">
+              <span>Grand Total:</span>
+              <span>₹${Number(o.totalAmount || 0).toFixed(2)}</span>
+            </div>
+          </div>
+
+          ${isDelivered ? `
+            <button class="btn" style="margin-top: 12px; background: var(--primary); display: flex; align-items: center; justify-content: center; gap: 8px;" onclick="reOrder('${orderId}')">
+              🔄 Re-Order All Items (1-Click)
+            </button>
+          ` : ''}
+        </div>
+      `;
 
       if (isDelivered) {
         // Clean up map & GPS listeners cleanly on delivery complete
@@ -2170,50 +2220,6 @@
           riderMarker = null;
           routingControl = null;
         }
-
-        // ITEM DETAILS BREAKDOWN (DELIVERED ORDERS HISTORY)
-        const itemsListHtml = (o.items || []).map(i => {
-          const variantStr = i.selectedVariant ? ` (${i.selectedVariant.name})` : '';
-          const addonsStr = i.selectedAddons && i.selectedAddons.length > 0 ? `<br><span style="font-size:11px; color:var(--text-muted);">+ ${i.selectedAddons.map(a => a.name).join(', ')}</span>` : '';
-          return `
-            <div class="flex justify-between items-center" style="padding: 8px 0; border-bottom: 1px dashed var(--border-color); font-size: 13px;">
-              <div>
-                <strong>${i.name}${variantStr}</strong> x ${i.qty}
-                ${addonsStr}
-              </div>
-              <strong style="color:var(--text-main);">₹${(Number(i.price) * i.qty).toFixed(2)}</strong>
-            </div>
-          `;
-        }).join('');
-
-        orderSummaryCardHtml = `
-          <div style="background:var(--bg-card); padding:18px; border-radius:var(--radius-md); border:1px solid var(--border-color); margin-top:16px; box-shadow:var(--shadow-sm);">
-            <div class="flex justify-between items-center" style="margin-bottom:10px; border-bottom:1px solid var(--border-color); padding-bottom:8px;">
-              <h4 style="font-size:15px; font-weight:700;">🛒 Order Items Summary</h4>
-              <span style="font-size:12px; color:var(--text-muted); font-weight:600;">${(o.items || []).length} Items</span>
-            </div>
-
-            <div style="margin-bottom: 12px;">
-              ${itemsListHtml}
-            </div>
-
-            <div style="font-size: 12px; color: var(--text-muted); line-height: 1.6; background: #f8fafc; padding: 12px; border-radius: var(--radius-sm);">
-              <div class="flex justify-between"><span>Subtotal:</span> <span>₹${Number(o.subtotal || 0).toFixed(2)}</span></div>
-              <div class="flex justify-between"><span>Delivery Charge:</span> <span>₹${Number(o.deliveryCharge || 0).toFixed(2)}</span></div>
-              <div class="flex justify-between"><span>GST / Tax:</span> <span>₹${Number(o.tax || 0).toFixed(2)}</span></div>
-              ${Number(o.discount || 0) > 0 ? `<div class="flex justify-between" style="color:var(--success);"><span>Discount:</span> <span>-₹${Number(o.discount).toFixed(2)}</span></div>` : ''}
-              <hr style="margin: 6px 0; border:0; border-top:1px solid var(--border-color);">
-              <div class="flex justify-between" style="font-size: 14px; font-weight: 700; color: var(--text-main);">
-                <span>Grand Total:</span>
-                <span>₹${Number(o.totalAmount || 0).toFixed(2)}</span>
-              </div>
-            </div>
-
-            <button class="btn" style="margin-top: 12px; background: var(--primary); display: flex; align-items: center; justify-content: center; gap: 8px;" onclick="reOrder('${orderId}')">
-              🔄 Re-Order All Items (1-Click)
-            </button>
-          </div>
-        `;
 
         statusHeaderHtml = `
           <div style="background:#d1fae5; border:1px solid #a7f3d0; color:#047857; padding:16px; border-radius:var(--radius-md); text-align:center; margin-top:12px;">
@@ -2338,8 +2344,8 @@
         </div>
         
         ${statusHeaderHtml}
-        ${mapSectionHtml}
         ${orderSummaryCardHtml}
+        ${mapSectionHtml}
         ${ratingSectionHtml}
 
         <ul class="timeline" style="margin-top:18px;">${timelineHtml}</ul>
