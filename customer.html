@@ -2120,7 +2120,10 @@
         statusHeaderHtml = `
           <div style="background:#d1fae5; border:1px solid #a7f3d0; color:#047857; padding:16px; border-radius:var(--radius-md); text-align:center; margin-top:12px;">
             <h3 style="margin-bottom:4px; font-size:16px;">🎉 Your Order Successfully Delivered!</h3>
-            <p style="font-size:13px;">Hope you enjoy your meal.</p>
+            <p style="font-size:13px; margin-bottom:12px;">Hope you enjoy your meal.</p>
+            <button class="btn" style="background:#10b981; color:white; width:auto; padding:8px 18px; font-size:13px; margin:0 auto; display:inline-flex; align-items:center; gap:6px;" onclick="downloadPDFInvoice('${orderId}')">
+              📄 Download Tax Invoice (PDF)
+            </button>
           </div>
         `;
 
