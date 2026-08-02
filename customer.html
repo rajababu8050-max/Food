@@ -2154,6 +2154,9 @@
       if (!o) return;
 
       const normStatus = window.normalizeStatus(o.status);
+      const isDelivered = normStatus === 'DELIVERED';
+      const isCancelled = normStatus === 'CANCELLED';
+
       const statuses = ["PLACED", "ACCEPTED", "PREPARING", "READY_FOR_PICKUP", "PICKED_UP", "OUT_FOR_DELIVERY", "DELIVERED"];
       const currentIndex = statuses.indexOf(normStatus);
 
@@ -2175,9 +2178,9 @@
         return `${day}/${month}/${year}, ${strHours}:${minutes} ${ampm}`;
       };
 
-      const isDelivered = normStatus === 'DELIVERED';
       const orderDateStr = formatCustomDateTime(o.createdAt);
       const deliveredDateStr = isDelivered && o.updatedAt ? formatCustomDateTime(o.updatedAt) : null;
+      const cancelledDateStr = isCancelled && o.updatedAt ? formatCustomDateTime(o.updatedAt) : null;
 
       const timelineHtml = statuses.map((st, idx) => `
         <li class="timeline-item ${idx <= currentIndex ? 'active' : ''}">
@@ -2197,9 +2200,9 @@
       let statusHeaderHtml = '';
       let mapSectionHtml = '';
       let ratingSectionHtml = '';
-      let orderSummaryCardHtml = ''; // Active/In-progress orders me hide rahega
+      let orderSummaryCardHtml = '';
 
-      // ITEM DETAILS BREAKDOWN (ORDER SUMMARY WITH RESTAURANT DETAILS)
+      // ITEM DETAILS BREAKDOWN SUMMARY
       const itemsListHtml = (o.items || []).map(i => {
         const variantStr = i.selectedVariant ? ` (${i.selectedVariant.name})` : '';
         const addonsStr = i.selectedAddons && i.selectedAddons.length > 0 ? `<br><span style="font-size:11px; color:var(--text-muted);">+ ${i.selectedAddons.map(a => a.name).join(', ')}</span>` : '';
@@ -2214,54 +2217,85 @@
         `;
       }).join('');
 
-      orderSummaryCardHtml = `
-        <div style="background:var(--bg-card); padding:18px; border-radius:var(--radius-md); border:1px solid var(--border-color); margin-top:16px; box-shadow:var(--shadow-sm);">
-          <div style="margin-bottom:10px; border-bottom:1px solid var(--border-color); padding-bottom:8px;">
-            <h4 style="font-size:15px; font-weight:700; color:var(--primary);">🏬 ${restaurantName}</h4>
-            <p style="font-size:12px; color:var(--text-muted); margin-top:2px;">📍 ${restaurantInfo.address || 'Local Outlet'}</p>
-          </div>
+      // ORDER CANCELLED CONDITION
+      if (isCancelled) {
+        if (liveLocationRef) { off(liveLocationRef); liveLocationRef = null; }
+        if (liveMap) { liveMap.remove(); liveMap = null; riderMarker = null; routingControl = null; }
 
-          <div class="flex justify-between items-center" style="margin-bottom:8px;">
-            <strong style="font-size:14px; color:var(--text-main);">🛒 Ordered Items Summary</strong>
-            <span style="font-size:12px; color:var(--text-muted); font-weight:600;">${(o.items || []).length} Items</span>
+        statusHeaderHtml = `
+          <div style="background:#fee2e2; border:1px solid #fca5a5; color:#b91c1c; padding:16px; border-radius:var(--radius-md); text-align:center; margin-top:12px;">
+            <h3 style="margin-bottom:4px; font-size:16px;">❌ Order Cancelled</h3>
+            <p style="font-size:13px;">This order was cancelled.</p>
           </div>
+        `;
+        mapSectionHtml = ''; // No map, no OTP, no delivery partner details
 
-          <div style="margin-bottom: 12px;">
-            ${itemsListHtml}
-          </div>
+        orderSummaryCardHtml = `
+          <div style="background:var(--bg-card); padding:18px; border-radius:var(--radius-md); border:1px solid var(--border-color); margin-top:16px; box-shadow:var(--shadow-sm);">
+            <div style="margin-bottom:10px; border-bottom:1px solid var(--border-color); padding-bottom:8px;">
+              <h4 style="font-size:15px; font-weight:700; color:var(--primary);">🏬 ${restaurantName}</h4>
+              <p style="font-size:12px; color:var(--text-muted); margin-top:2px;">📍 ${restaurantInfo.address || 'Local Outlet'}</p>
+            </div>
 
-          <div style="font-size: 12px; color: var(--text-muted); line-height: 1.6; background: #f8fafc; padding: 12px; border-radius: var(--radius-sm);">
-            <div class="flex justify-between"><span>Subtotal:</span> <span>₹${Number(o.subtotal || 0).toFixed(2)}</span></div>
-            <div class="flex justify-between"><span>Delivery Charge:</span> <span>₹${Number(o.deliveryCharge || 0).toFixed(2)}</span></div>
-            <div class="flex justify-between"><span>GST / Tax:</span> <span>₹${Number(o.tax || 0).toFixed(2)}</span></div>
-            ${Number(o.discount || 0) > 0 ? `<div class="flex justify-between" style="color:var(--success);"><span>Discount:</span> <span>-₹${Number(o.discount).toFixed(2)}</span></div>` : ''}
-            <hr style="margin: 6px 0; border:0; border-top:1px solid var(--border-color);">
-            <div class="flex justify-between" style="font-size: 14px; font-weight: 700; color: var(--text-main);">
-              <span>Grand Total:</span>
-              <span>₹${Number(o.totalAmount || 0).toFixed(2)}</span>
+            <div class="flex justify-between items-center" style="margin-bottom:8px;">
+              <strong style="font-size:14px; color:var(--text-main);">🛒 Cancelled Items Summary</strong>
+              <span style="font-size:12px; color:var(--text-muted); font-weight:600;">${(o.items || []).length} Items</span>
+            </div>
+
+            <div style="margin-bottom: 12px;">
+              ${itemsListHtml}
+            </div>
+
+            <div style="font-size: 12px; color: var(--text-muted); line-height: 1.6; background: #f8fafc; padding: 12px; border-radius: var(--radius-sm);">
+              <div class="flex justify-between"><span>Subtotal:</span> <span>₹${Number(o.subtotal || 0).toFixed(2)}</span></div>
+              <div class="flex justify-between"><span>Delivery Charge:</span> <span>₹${Number(o.deliveryCharge || 0).toFixed(2)}</span></div>
+              <div class="flex justify-between"><span>GST / Tax:</span> <span>₹${Number(o.tax || 0).toFixed(2)}</span></div>
+              <hr style="margin: 6px 0; border:0; border-top:1px solid var(--border-color);">
+              <div class="flex justify-between" style="font-size: 14px; font-weight: 700; color: var(--text-main);">
+                <span>Total Amount:</span>
+                <span>₹${Number(o.totalAmount || 0).toFixed(2)}</span>
+              </div>
             </div>
           </div>
+        `;
 
-          ${isDelivered ? `
+      } else if (isDelivered) {
+        if (liveLocationRef) { off(liveLocationRef); liveLocationRef = null; }
+        if (liveMap) { liveMap.remove(); liveMap = null; riderMarker = null; routingControl = null; }
+
+        orderSummaryCardHtml = `
+          <div style="background:var(--bg-card); padding:18px; border-radius:var(--radius-md); border:1px solid var(--border-color); margin-top:16px; box-shadow:var(--shadow-sm);">
+            <div style="margin-bottom:10px; border-bottom:1px solid var(--border-color); padding-bottom:8px;">
+              <h4 style="font-size:15px; font-weight:700; color:var(--primary);">🏬 ${restaurantName}</h4>
+              <p style="font-size:12px; color:var(--text-muted); margin-top:2px;">📍 ${restaurantInfo.address || 'Local Outlet'}</p>
+            </div>
+
+            <div class="flex justify-between items-center" style="margin-bottom:8px;">
+              <strong style="font-size:14px; color:var(--text-main);">🛒 Ordered Items Summary</strong>
+              <span style="font-size:12px; color:var(--text-muted); font-weight:600;">${(o.items || []).length} Items</span>
+            </div>
+
+            <div style="margin-bottom: 12px;">
+              ${itemsListHtml}
+            </div>
+
+            <div style="font-size: 12px; color: var(--text-muted); line-height: 1.6; background: #f8fafc; padding: 12px; border-radius: var(--radius-sm);">
+              <div class="flex justify-between"><span>Subtotal:</span> <span>₹${Number(o.subtotal || 0).toFixed(2)}</span></div>
+              <div class="flex justify-between"><span>Delivery Charge:</span> <span>₹${Number(o.deliveryCharge || 0).toFixed(2)}</span></div>
+              <div class="flex justify-between"><span>GST / Tax:</span> <span>₹${Number(o.tax || 0).toFixed(2)}</span></div>
+              ${Number(o.discount || 0) > 0 ? `<div class="flex justify-between" style="color:var(--success);"><span>Discount:</span> <span>-₹${Number(o.discount).toFixed(2)}</span></div>` : ''}
+              <hr style="margin: 6px 0; border:0; border-top:1px solid var(--border-color);">
+              <div class="flex justify-between" style="font-size: 14px; font-weight: 700; color: var(--text-main);">
+                <span>Grand Total:</span>
+                <span>₹${Number(o.totalAmount || 0).toFixed(2)}</span>
+              </div>
+            </div>
+
             <button class="btn" style="margin-top: 12px; background: var(--primary); display: flex; align-items: center; justify-content: center; gap: 8px;" onclick="reOrder('${orderId}')">
               🔄 Re-Order All Items (1-Click)
             </button>
-          ` : ''}
-        </div>
-      `;
-
-      if (isDelivered) {
-        // Clean up map & GPS listeners cleanly on delivery complete
-        if (liveLocationRef) {
-          off(liveLocationRef);
-          liveLocationRef = null;
-        }
-        if (liveMap) {
-          liveMap.remove();
-          liveMap = null;
-          riderMarker = null;
-          routingControl = null;
-        }
+          </div>
+        `;
 
         statusHeaderHtml = `
           <div style="background:#d1fae5; border:1px solid #a7f3d0; color:#047857; padding:16px; border-radius:var(--radius-md); text-align:center; margin-top:12px;">
@@ -2378,9 +2412,10 @@
           <div>
             <h3 style="font-size:18px;">Order #${o.orderNumber}</h3>
             <p style="font-size:12px; color:var(--text-muted); margin-top:4px; line-height:1.5;">
-              Status: <strong style="color:var(--primary);">${normStatus.replace(/_/g, ' ')}</strong> | Payment: <strong>${o.paymentMethod || 'COD'} (${o.paymentStatus || 'UNPAID'})</strong><br>
+              Status: <strong style="color:${isCancelled ? 'var(--danger)' : (isDelivered ? 'var(--success)' : 'var(--primary)')};">${normStatus.replace(/_/g, ' ')}</strong> | Payment: <strong>${o.paymentMethod || 'COD'} (${o.paymentStatus || 'UNPAID'})</strong><br>
               📅 <strong>Placed On:</strong> ${orderDateStr}
               ${deliveredDateStr ? `<br><span style="color:var(--success); font-weight:600;">✅ <strong>Delivered On:</strong> ${deliveredDateStr}</span>` : ''}
+              ${cancelledDateStr ? `<br><span style="color:var(--danger); font-weight:600;">❌ <strong>Cancelled On:</strong> ${cancelledDateStr}</span>` : ''}
             </p>
           </div>
         </div>
@@ -2390,11 +2425,11 @@
         ${mapSectionHtml}
         ${ratingSectionHtml}
 
-        <ul class="timeline" style="margin-top:18px;">${timelineHtml}</ul>
+        ${!isCancelled ? `<ul class="timeline" style="margin-top:18px;">${timelineHtml}</ul>` : ''}
         ${normStatus === 'PLACED' ? `<button class="btn btn-outline" style="border-color:var(--danger); color:var(--danger); margin-top:12px;" onclick="cancelCustomerOrder('${orderId}')">Cancel Order</button>` : ''}
       `;
 
-      if (!isDelivered) {
+      if (!isDelivered && !isCancelled) {
         initLiveMapTracking(orderId);
       }
       window.updateAllChatBadges();
@@ -2491,7 +2526,7 @@
 
     function initLiveMapTracking(orderId) {
       const order = window.state.orders[orderId];
-      if (!order || window.normalizeStatus(order.status) === 'DELIVERED') return;
+      if (!order || window.normalizeStatus(order.status) === 'DELIVERED' || window.normalizeStatus(order.status) === 'CANCELLED') return;
 
       const restaurant = window.state.restaurants[order.restaurantId] || {};
       const restLat = Number(restaurant.lat) || (order.customerGeoLocation ? Number(order.customerGeoLocation.lat) : 28.6139);
