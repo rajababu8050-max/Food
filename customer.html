@@ -491,10 +491,7 @@
             <div class="flex justify-between items-center" style="margin-bottom:6px;">
               <label style="margin-bottom:0;">Delivery Address</label>
             </div>
-            <button type="button" class="btn btn-location" onclick="useCurrentLocationForAddress()">
-              📍 Auto-Detect Current Location (1-Click)
-            </button>
-            <textarea id="checkout-address" class="form-control" placeholder="Enter delivery address or use current location button above"></textarea>
+            <textarea id="checkout-address" class="form-control" placeholder="Detecting your live location..."></textarea>
           </div>
 
           <div class="form-group">
@@ -649,7 +646,7 @@
     window.state = {
       user: null, profile: {}, restaurants: {}, menus: {}, orders: {}, allChats: {}, deliveryPartners: {}, deliveryRatings: {}, restaurantRatings: {}, banners: {},
       cart: { restaurantId: null, items: [] }, selectedRestaurant: null,
-      currentFilter: 'ALL', selectedCategory: 'ALL', appliedCoupon: null, coupons: {}, activeChatOrderId: null, currentLocation: null,
+      currentFilter: 'ALL', selectedCategory: 'ALL', appliedCoupon: null, coupons: {}, activeChatOrderId: null, currentLocation: null, detectedAddress: null,
       modalFoodItem: null, modalQty: 1, selectedVariant: null, selectedAddons: [], currentRating: 5, currentRestaurantRating: 5
     };
 
@@ -777,6 +774,7 @@
     // REGISTRATION TIME AUTO LOCATION DETECT FUNCTION
     window.detectSignupLocation = function() {
       const addressInput = document.getElementById('signup-address');
+      const checkoutAddressInput = document.getElementById('checkout-address');
       if (addressInput) addressInput.value = "Detecting live GPS location...";
 
       if (!navigator.geolocation) {
@@ -795,11 +793,15 @@
             const res = await fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lng}`);
             const data = await res.json();
             const fullAddress = data.display_name || `Lat: ${lat.toFixed(4)}, Lng: ${lng.toFixed(4)}`;
+            window.state.detectedAddress = fullAddress;
             if (addressInput) addressInput.value = fullAddress;
+            if (checkoutAddressInput) checkoutAddressInput.value = fullAddress;
             showToast("📍 Live location auto-detected!", "success");
           } catch (err) {
             const fallbackAddr = `Lat: ${lat.toFixed(4)}, Lng: ${lng.toFixed(4)}`;
+            window.state.detectedAddress = fallbackAddr;
             if (addressInput) addressInput.value = fallbackAddr;
+            if (checkoutAddressInput) checkoutAddressInput.value = fallbackAddr;
             showToast("📍 GPS location coordinates set", "success");
           }
         },
@@ -811,6 +813,7 @@
       );
     };
 
+    // AUTOMATIC LIVE LOCATION FETCH & CHECKOUT AUTO-FILL
     window.fetchCustomerLocation = function(showToastMsg = false) {
       const locationTextEl = document.getElementById('header-location-text');
       const checkoutAddressInput = document.getElementById('checkout-address');
@@ -831,53 +834,23 @@
             const res = await fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lng}`);
             const data = await res.json();
             const address = data.display_name || `Lat: ${lat.toFixed(4)}, Lng: ${lng.toFixed(4)}`;
+            window.state.detectedAddress = address;
             if (locationTextEl) locationTextEl.innerText = address;
-            if (checkoutAddressInput && !checkoutAddressInput.value) checkoutAddressInput.value = address;
+            
+            // DIRECTLY AUTO-FILL CHECKOUT ADDRESS FIELD
+            if (checkoutAddressInput) checkoutAddressInput.value = address;
+            
             if (showToastMsg) showToast("📍 Live Location updated!", "success");
           } catch (err) {
             const fallbackAddr = `Lat: ${lat.toFixed(4)}, Lng: ${lng.toFixed(4)}`;
+            window.state.detectedAddress = fallbackAddr;
             if (locationTextEl) locationTextEl.innerText = fallbackAddr;
-            if (checkoutAddressInput && !checkoutAddressInput.value) checkoutAddressInput.value = fallbackAddr;
+            if (checkoutAddressInput) checkoutAddressInput.value = fallbackAddr;
           }
         },
         (error) => {
           if (locationTextEl) locationTextEl.innerText = "Location Permission Denied";
           if (showToastMsg) showToast("GPS Access Denied. Please enable location permission.", "danger");
-        },
-        { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }
-      );
-    };
-
-    window.useCurrentLocationForAddress = function() {
-      const checkoutAddressInput = document.getElementById('checkout-address');
-      checkoutAddressInput.value = "Fetching live GPS location...";
-
-      if (!navigator.geolocation) {
-        showToast("GPS is not supported on this browser.", "danger");
-        return;
-      }
-
-      navigator.geolocation.getCurrentPosition(
-        async (position) => {
-          const lat = position.coords.latitude;
-          const lng = position.coords.longitude;
-          window.state.currentLocation = { lat, lng };
-
-          try {
-            const res = await fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lng}`);
-            const data = await res.json();
-            const fullAddress = data.display_name || `Lat: ${lat.toFixed(4)}, Lng: ${lng.toFixed(4)}`;
-            checkoutAddressInput.value = fullAddress;
-            showToast("📍 Current location set as delivery address!", "success");
-          } catch (err) {
-            const fallbackAddress = `Lat: ${lat.toFixed(4)}, Lng: ${lng.toFixed(4)}`;
-            checkoutAddressInput.value = fallbackAddress;
-            showToast("📍 Location set successfully", "success");
-          }
-        },
-        (err) => {
-          showToast("Unable to fetch location: " + err.message, "danger");
-          checkoutAddressInput.value = window.state.profile.address || '';
         },
         { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }
       );
@@ -921,8 +894,10 @@
                   const res = await fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lng}`);
                   const data = await res.json();
                   addressVal = data.display_name || `Lat: ${lat.toFixed(4)}, Lng: ${lng.toFixed(4)}`;
+                  window.state.detectedAddress = addressVal;
                 } catch(e) {
                   addressVal = `Lat: ${lat.toFixed(4)}, Lng: ${lng.toFixed(4)}`;
+                  window.state.detectedAddress = addressVal;
                 }
                 resolve();
               },
@@ -979,7 +954,8 @@
           document.getElementById('profile-phone').value = profileData.phone || '';
           document.getElementById('profile-address').value = profileData.address || '';
 
-          document.getElementById('checkout-address').value = profileData.address || '';
+          // DIRECTLY AUTO-FILL CHECKOUT ADDRESS WITH GPS DETECTED LOCATION
+          document.getElementById('checkout-address').value = window.state.detectedAddress || profileData.address || '';
           document.getElementById('checkout-phone').value = profileData.phone || '';
 
           fetchCustomerLocation(false);
@@ -1011,7 +987,9 @@
         window.state.profile.address = newAddress;
         window.state.profile.phone = newPhone;
 
-        document.getElementById('checkout-address').value = newAddress;
+        if (!window.state.detectedAddress) {
+          document.getElementById('checkout-address').value = newAddress;
+        }
         document.getElementById('checkout-phone').value = newPhone;
 
         showToast('Profile updated', 'success');
@@ -1234,8 +1212,9 @@
         const addressInput = document.getElementById('checkout-address');
         const phoneInput = document.getElementById('checkout-phone');
 
-        if (addressInput && !addressInput.value) {
-          addressInput.value = profile.address || '';
+        // DIRECTLY AUTO-FILL ADDRESS IN CART VIEW
+        if (addressInput) {
+          addressInput.value = window.state.detectedAddress || profile.address || '';
         }
         if (phoneInput && !phoneInput.value) {
           phoneInput.value = profile.phone || '';
@@ -2156,57 +2135,7 @@
       let statusHeaderHtml = '';
       let mapSectionHtml = '';
       let ratingSectionHtml = '';
-      
-      // ITEM DETAILS BREAKDOWN (ORDER SUMMARY WITH RESTAURANT DETAILS)
-      const itemsListHtml = (o.items || []).map(i => {
-        const variantStr = i.selectedVariant ? ` (${i.selectedVariant.name})` : '';
-        const addonsStr = i.selectedAddons && i.selectedAddons.length > 0 ? `<br><span style="font-size:11px; color:var(--text-muted);">+ ${i.selectedAddons.map(a => a.name).join(', ')}</span>` : '';
-        return `
-          <div class="flex justify-between items-center" style="padding: 8px 0; border-bottom: 1px dashed var(--border-color); font-size: 13px;">
-            <div>
-              <strong>${i.name}${variantStr}</strong> x ${i.qty}
-              ${addonsStr}
-            </div>
-            <strong style="color:var(--text-main);">₹${(Number(i.price) * i.qty).toFixed(2)}</strong>
-          </div>
-        `;
-      }).join('');
-
-      const orderSummaryCardHtml = `
-        <div style="background:var(--bg-card); padding:18px; border-radius:var(--radius-md); border:1px solid var(--border-color); margin-top:16px; box-shadow:var(--shadow-sm);">
-          <div style="margin-bottom:10px; border-bottom:1px solid var(--border-color); padding-bottom:8px;">
-            <h4 style="font-size:15px; font-weight:700; color:var(--primary);">🏬 ${restaurantName}</h4>
-            <p style="font-size:12px; color:var(--text-muted); margin-top:2px;">📍 ${restaurantInfo.address || 'Local Outlet'}</p>
-          </div>
-
-          <div class="flex justify-between items-center" style="margin-bottom:8px;">
-            <strong style="font-size:14px; color:var(--text-main);">🛒 Ordered Items Summary</strong>
-            <span style="font-size:12px; color:var(--text-muted); font-weight:600;">${(o.items || []).length} Items</span>
-          </div>
-
-          <div style="margin-bottom: 12px;">
-            ${itemsListHtml}
-          </div>
-
-          <div style="font-size: 12px; color: var(--text-muted); line-height: 1.6; background: #f8fafc; padding: 12px; border-radius: var(--radius-sm);">
-            <div class="flex justify-between"><span>Subtotal:</span> <span>₹${Number(o.subtotal || 0).toFixed(2)}</span></div>
-            <div class="flex justify-between"><span>Delivery Charge:</span> <span>₹${Number(o.deliveryCharge || 0).toFixed(2)}</span></div>
-            <div class="flex justify-between"><span>GST / Tax:</span> <span>₹${Number(o.tax || 0).toFixed(2)}</span></div>
-            ${Number(o.discount || 0) > 0 ? `<div class="flex justify-between" style="color:var(--success);"><span>Discount:</span> <span>-₹${Number(o.discount).toFixed(2)}</span></div>` : ''}
-            <hr style="margin: 6px 0; border:0; border-top:1px solid var(--border-color);">
-            <div class="flex justify-between" style="font-size: 14px; font-weight: 700; color: var(--text-main);">
-              <span>Grand Total:</span>
-              <span>₹${Number(o.totalAmount || 0).toFixed(2)}</span>
-            </div>
-          </div>
-
-          ${isDelivered ? `
-            <button class="btn" style="margin-top: 12px; background: var(--primary); display: flex; align-items: center; justify-content: center; gap: 8px;" onclick="reOrder('${orderId}')">
-              🔄 Re-Order All Items (1-Click)
-            </button>
-          ` : ''}
-        </div>
-      `;
+      let orderSummaryCardHtml = ''; // Active/In-progress orders me hide rahega
 
       if (isDelivered) {
         // Clean up map & GPS listeners cleanly on delivery complete
@@ -2220,6 +2149,55 @@
           riderMarker = null;
           routingControl = null;
         }
+
+        // ITEM DETAILS BREAKDOWN (DELIVERED ORDERS HISTORY)
+        const itemsListHtml = (o.items || []).map(i => {
+          const variantStr = i.selectedVariant ? ` (${i.selectedVariant.name})` : '';
+          const addonsStr = i.selectedAddons && i.selectedAddons.length > 0 ? `<br><span style="font-size:11px; color:var(--text-muted);">+ ${i.selectedAddons.map(a => a.name).join(', ')}</span>` : '';
+          return `
+            <div class="flex justify-between items-center" style="padding: 8px 0; border-bottom: 1px dashed var(--border-color); font-size: 13px;">
+              <div>
+                <strong>${i.name}${variantStr}</strong> x ${i.qty}
+                ${addonsStr}
+              </div>
+              <strong style="color:var(--text-main);">₹${(Number(i.price) * i.qty).toFixed(2)}</strong>
+            </div>
+          `;
+        }).join('');
+
+        orderSummaryCardHtml = `
+          <div style="background:var(--bg-card); padding:18px; border-radius:var(--radius-md); border:1px solid var(--border-color); margin-top:16px; box-shadow:var(--shadow-sm);">
+            <div style="margin-bottom:10px; border-bottom:1px solid var(--border-color); padding-bottom:8px;">
+              <h4 style="font-size:15px; font-weight:700; color:var(--primary);">🏬 ${restaurantName}</h4>
+              <p style="font-size:12px; color:var(--text-muted); margin-top:2px;">📍 ${restaurantInfo.address || 'Local Outlet'}</p>
+            </div>
+
+            <div class="flex justify-between items-center" style="margin-bottom:8px;">
+              <strong style="font-size:14px; color:var(--text-main);">🛒 Ordered Items Summary</strong>
+              <span style="font-size:12px; color:var(--text-muted); font-weight:600;">${(o.items || []).length} Items</span>
+            </div>
+
+            <div style="margin-bottom: 12px;">
+              ${itemsListHtml}
+            </div>
+
+            <div style="font-size: 12px; color: var(--text-muted); line-height: 1.6; background: #f8fafc; padding: 12px; border-radius: var(--radius-sm);">
+              <div class="flex justify-between"><span>Subtotal:</span> <span>₹${Number(o.subtotal || 0).toFixed(2)}</span></div>
+              <div class="flex justify-between"><span>Delivery Charge:</span> <span>₹${Number(o.deliveryCharge || 0).toFixed(2)}</span></div>
+              <div class="flex justify-between"><span>GST / Tax:</span> <span>₹${Number(o.tax || 0).toFixed(2)}</span></div>
+              ${Number(o.discount || 0) > 0 ? `<div class="flex justify-between" style="color:var(--success);"><span>Discount:</span> <span>-₹${Number(o.discount).toFixed(2)}</span></div>` : ''}
+              <hr style="margin: 6px 0; border:0; border-top:1px solid var(--border-color);">
+              <div class="flex justify-between" style="font-size: 14px; font-weight: 700; color: var(--text-main);">
+                <span>Grand Total:</span>
+                <span>₹${Number(o.totalAmount || 0).toFixed(2)}</span>
+              </div>
+            </div>
+
+            <button class="btn" style="margin-top: 12px; background: var(--primary); display: flex; align-items: center; justify-content: center; gap: 8px;" onclick="reOrder('${orderId}')">
+              🔄 Re-Order All Items (1-Click)
+            </button>
+          </div>
+        `;
 
         statusHeaderHtml = `
           <div style="background:#d1fae5; border:1px solid #a7f3d0; color:#047857; padding:16px; border-radius:var(--radius-md); text-align:center; margin-top:12px;">
