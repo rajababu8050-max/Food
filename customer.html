@@ -646,7 +646,7 @@
     window.state = {
       user: null, profile: {}, restaurants: {}, menus: {}, orders: {}, allChats: {}, deliveryPartners: {}, deliveryRatings: {}, restaurantRatings: {}, banners: {},
       cart: { restaurantId: null, items: [] }, selectedRestaurant: null,
-      currentFilter: 'ALL', selectedCategory: 'ALL', appliedCoupon: null, coupons: {}, activeChatOrderId: null, currentLocation: null, detectedAddress: null,
+      currentFilter: 'ALL', selectedCategory: 'ALL', appliedCoupon: null, coupons: {}, activeChatOrderId: null, currentLocation: null, detectedAddress: null, isLocationAllowed: false,
       modalFoodItem: null, modalQty: 1, selectedVariant: null, selectedAddons: [], currentRating: 5, currentRestaurantRating: 5
     };
 
@@ -788,6 +788,7 @@
           const lat = position.coords.latitude;
           const lng = position.coords.longitude;
           window.state.currentLocation = { lat, lng };
+          window.state.isLocationAllowed = true;
 
           try {
             const res = await fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lng}`);
@@ -797,30 +798,37 @@
             if (addressInput) addressInput.value = fullAddress;
             if (checkoutAddressInput) checkoutAddressInput.value = fullAddress;
             showToast("📍 Live location auto-detected!", "success");
+            renderRestaurants();
           } catch (err) {
             const fallbackAddr = `Lat: ${lat.toFixed(4)}, Lng: ${lng.toFixed(4)}`;
             window.state.detectedAddress = fallbackAddr;
             if (addressInput) addressInput.value = fallbackAddr;
             if (checkoutAddressInput) checkoutAddressInput.value = fallbackAddr;
             showToast("📍 GPS location coordinates set", "success");
+            renderRestaurants();
           }
         },
         (error) => {
+          window.state.isLocationAllowed = false;
           showToast("Unable to fetch location automatically. Please enter address manually.", "danger");
           if (addressInput) addressInput.value = "";
+          renderRestaurants();
         },
         { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }
       );
     };
 
-    // AUTOMATIC LIVE LOCATION FETCH & CHECKOUT AUTO-FILL
+    // AUTOMATIC LIVE LOCATION FETCH & CHECKOUT AUTO-FILL + LOCATION GATE CHECK
     window.fetchCustomerLocation = function(showToastMsg = false) {
       const locationTextEl = document.getElementById('header-location-text');
       const checkoutAddressInput = document.getElementById('checkout-address');
       if (locationTextEl) locationTextEl.innerText = "Detecting location...";
 
       if (!navigator.geolocation) {
+        window.state.isLocationAllowed = false;
+        if (locationTextEl) locationTextEl.innerText = "GPS Not Supported";
         showToast("GPS Not Supported", "danger");
+        renderRestaurants();
         return;
       }
 
@@ -829,6 +837,7 @@
           const lat = position.coords.latitude;
           const lng = position.coords.longitude;
           window.state.currentLocation = { lat, lng };
+          window.state.isLocationAllowed = true;
 
           try {
             const res = await fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lng}`);
@@ -841,16 +850,20 @@
             if (checkoutAddressInput) checkoutAddressInput.value = address;
             
             if (showToastMsg) showToast("📍 Live Location updated!", "success");
+            renderRestaurants();
           } catch (err) {
             const fallbackAddr = `Lat: ${lat.toFixed(4)}, Lng: ${lng.toFixed(4)}`;
             window.state.detectedAddress = fallbackAddr;
             if (locationTextEl) locationTextEl.innerText = fallbackAddr;
             if (checkoutAddressInput) checkoutAddressInput.value = fallbackAddr;
+            renderRestaurants();
           }
         },
         (error) => {
+          window.state.isLocationAllowed = false;
           if (locationTextEl) locationTextEl.innerText = "Location Permission Denied";
           if (showToastMsg) showToast("GPS Access Denied. Please enable location permission.", "danger");
+          renderRestaurants();
         },
         { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }
       );
@@ -890,6 +903,7 @@
                 const lat = pos.coords.latitude;
                 const lng = pos.coords.longitude;
                 window.state.currentLocation = { lat, lng };
+                window.state.isLocationAllowed = true;
                 try {
                   const res = await fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lng}`);
                   const data = await res.json();
@@ -1256,10 +1270,26 @@
       if (window.state.selectedRestaurant) renderMenu();
     };
 
+    // STRICT LOCATION GATE FOR RESTAURANT LISTING
     window.renderRestaurants = function() {
       const container = document.getElementById('restaurants-list');
       const search = document.getElementById('restaurant-search').value.toLowerCase();
       
+      // LOCATION PERMISSION CHECK: AGAR LOCATION OFF YA ALLOW NAHI H TO RESTAURANTS HIDE RAHE
+      if (!window.state.isLocationAllowed) {
+        container.innerHTML = `
+          <div style="background:var(--bg-card); padding:28px 20px; border-radius:var(--radius-lg); border:1px dashed var(--danger); text-align:center; margin-top:20px; box-shadow:var(--shadow-sm);">
+            <div style="font-size:36px; margin-bottom:8px;">📍</div>
+            <h3 style="font-size:16px; font-weight:700; color:var(--danger); margin-bottom:6px;">Please allow location permission first</h3>
+            <p style="font-size:12px; color:var(--text-muted); margin-bottom:16px;">We need your location permission to show nearby available restaurants and ensure delivery service.</p>
+            <button class="btn" style="width:auto; padding:10px 24px; font-size:13px; margin:0 auto; background:var(--primary);" onclick="fetchCustomerLocation(true)">
+              📍 Enable & Fetch Location
+            </button>
+          </div>
+        `;
+        return;
+      }
+
       const entries = Object.entries(window.state.restaurants).filter(([uid, r]) => {
         if (!r.approved) return false;
 
@@ -1318,6 +1348,11 @@
     };
 
     window.openRestaurantMenu = function(restaurantId) {
+      if (!window.state.isLocationAllowed) {
+        showToast("Please allow location permission first", "danger");
+        return;
+      }
+
       window.state.selectedRestaurant = { id: restaurantId, ...window.state.restaurants[restaurantId] };
       
       if (window.state.currentFilter === 'FAST_FOOD') {
@@ -1749,6 +1784,12 @@
     };
 
     window.handlePaymentAndOrder = async function() {
+      if (!window.state.isLocationAllowed) {
+        showToast('Please allow location permission to place an order', 'danger');
+        fetchCustomerLocation(true);
+        return;
+      }
+
       const rId = window.state.cart.restaurantId;
       const r = window.state.restaurants[rId];
       const subtotal = window.currentBill ? window.currentBill.subtotal : 0;
@@ -2135,7 +2176,57 @@
       let statusHeaderHtml = '';
       let mapSectionHtml = '';
       let ratingSectionHtml = '';
-      let orderSummaryCardHtml = ''; // Active/In-progress orders me hide rahega
+
+      // ITEM DETAILS BREAKDOWN (ORDER SUMMARY WITH RESTAURANT DETAILS)
+      const itemsListHtml = (o.items || []).map(i => {
+        const variantStr = i.selectedVariant ? ` (${i.selectedVariant.name})` : '';
+        const addonsStr = i.selectedAddons && i.selectedAddons.length > 0 ? `<br><span style="font-size:11px; color:var(--text-muted);">+ ${i.selectedAddons.map(a => a.name).join(', ')}</span>` : '';
+        return `
+          <div class="flex justify-between items-center" style="padding: 8px 0; border-bottom: 1px dashed var(--border-color); font-size: 13px;">
+            <div>
+              <strong>${i.name}${variantStr}</strong> x ${i.qty}
+              ${addonsStr}
+            </div>
+            <strong style="color:var(--text-main);">₹${(Number(i.price) * i.qty).toFixed(2)}</strong>
+          </div>
+        `;
+      }).join('');
+
+      const orderSummaryCardHtml = `
+        <div style="background:var(--bg-card); padding:18px; border-radius:var(--radius-md); border:1px solid var(--border-color); margin-top:16px; box-shadow:var(--shadow-sm);">
+          <div style="margin-bottom:10px; border-bottom:1px solid var(--border-color); padding-bottom:8px;">
+            <h4 style="font-size:15px; font-weight:700; color:var(--primary);">🏬 ${restaurantName}</h4>
+            <p style="font-size:12px; color:var(--text-muted); margin-top:2px;">📍 ${restaurantInfo.address || 'Local Outlet'}</p>
+          </div>
+
+          <div class="flex justify-between items-center" style="margin-bottom:8px;">
+            <strong style="font-size:14px; color:var(--text-main);">🛒 Ordered Items Summary</strong>
+            <span style="font-size:12px; color:var(--text-muted); font-weight:600;">${(o.items || []).length} Items</span>
+          </div>
+
+          <div style="margin-bottom: 12px;">
+            ${itemsListHtml}
+          </div>
+
+          <div style="font-size: 12px; color: var(--text-muted); line-height: 1.6; background: #f8fafc; padding: 12px; border-radius: var(--radius-sm);">
+            <div class="flex justify-between"><span>Subtotal:</span> <span>₹${Number(o.subtotal || 0).toFixed(2)}</span></div>
+            <div class="flex justify-between"><span>Delivery Charge:</span> <span>₹${Number(o.deliveryCharge || 0).toFixed(2)}</span></div>
+            <div class="flex justify-between"><span>GST / Tax:</span> <span>₹${Number(o.tax || 0).toFixed(2)}</span></div>
+            ${Number(o.discount || 0) > 0 ? `<div class="flex justify-between" style="color:var(--success);"><span>Discount:</span> <span>-₹${Number(o.discount).toFixed(2)}</span></div>` : ''}
+            <hr style="margin: 6px 0; border:0; border-top:1px solid var(--border-color);">
+            <div class="flex justify-between" style="font-size: 14px; font-weight: 700; color: var(--text-main);">
+              <span>Grand Total:</span>
+              <span>₹${Number(o.totalAmount || 0).toFixed(2)}</span>
+            </div>
+          </div>
+
+          ${isDelivered ? `
+            <button class="btn" style="margin-top: 12px; background: var(--primary); display: flex; align-items: center; justify-content: center; gap: 8px;" onclick="reOrder('${orderId}')">
+              🔄 Re-Order All Items (1-Click)
+            </button>
+          ` : ''}
+        </div>
+      `;
 
       if (isDelivered) {
         // Clean up map & GPS listeners cleanly on delivery complete
@@ -2149,55 +2240,6 @@
           riderMarker = null;
           routingControl = null;
         }
-
-        // ITEM DETAILS BREAKDOWN (DELIVERED ORDERS HISTORY)
-        const itemsListHtml = (o.items || []).map(i => {
-          const variantStr = i.selectedVariant ? ` (${i.selectedVariant.name})` : '';
-          const addonsStr = i.selectedAddons && i.selectedAddons.length > 0 ? `<br><span style="font-size:11px; color:var(--text-muted);">+ ${i.selectedAddons.map(a => a.name).join(', ')}</span>` : '';
-          return `
-            <div class="flex justify-between items-center" style="padding: 8px 0; border-bottom: 1px dashed var(--border-color); font-size: 13px;">
-              <div>
-                <strong>${i.name}${variantStr}</strong> x ${i.qty}
-                ${addonsStr}
-              </div>
-              <strong style="color:var(--text-main);">₹${(Number(i.price) * i.qty).toFixed(2)}</strong>
-            </div>
-          `;
-        }).join('');
-
-        orderSummaryCardHtml = `
-          <div style="background:var(--bg-card); padding:18px; border-radius:var(--radius-md); border:1px solid var(--border-color); margin-top:16px; box-shadow:var(--shadow-sm);">
-            <div style="margin-bottom:10px; border-bottom:1px solid var(--border-color); padding-bottom:8px;">
-              <h4 style="font-size:15px; font-weight:700; color:var(--primary);">🏬 ${restaurantName}</h4>
-              <p style="font-size:12px; color:var(--text-muted); margin-top:2px;">📍 ${restaurantInfo.address || 'Local Outlet'}</p>
-            </div>
-
-            <div class="flex justify-between items-center" style="margin-bottom:8px;">
-              <strong style="font-size:14px; color:var(--text-main);">🛒 Ordered Items Summary</strong>
-              <span style="font-size:12px; color:var(--text-muted); font-weight:600;">${(o.items || []).length} Items</span>
-            </div>
-
-            <div style="margin-bottom: 12px;">
-              ${itemsListHtml}
-            </div>
-
-            <div style="font-size: 12px; color: var(--text-muted); line-height: 1.6; background: #f8fafc; padding: 12px; border-radius: var(--radius-sm);">
-              <div class="flex justify-between"><span>Subtotal:</span> <span>₹${Number(o.subtotal || 0).toFixed(2)}</span></div>
-              <div class="flex justify-between"><span>Delivery Charge:</span> <span>₹${Number(o.deliveryCharge || 0).toFixed(2)}</span></div>
-              <div class="flex justify-between"><span>GST / Tax:</span> <span>₹${Number(o.tax || 0).toFixed(2)}</span></div>
-              ${Number(o.discount || 0) > 0 ? `<div class="flex justify-between" style="color:var(--success);"><span>Discount:</span> <span>-₹${Number(o.discount).toFixed(2)}</span></div>` : ''}
-              <hr style="margin: 6px 0; border:0; border-top:1px solid var(--border-color);">
-              <div class="flex justify-between" style="font-size: 14px; font-weight: 700; color: var(--text-main);">
-                <span>Grand Total:</span>
-                <span>₹${Number(o.totalAmount || 0).toFixed(2)}</span>
-              </div>
-            </div>
-
-            <button class="btn" style="margin-top: 12px; background: var(--primary); display: flex; align-items: center; justify-content: center; gap: 8px;" onclick="reOrder('${orderId}')">
-              🔄 Re-Order All Items (1-Click)
-            </button>
-          </div>
-        `;
 
         statusHeaderHtml = `
           <div style="background:#d1fae5; border:1px solid #a7f3d0; color:#047857; padding:16px; border-radius:var(--radius-md); text-align:center; margin-top:12px;">
