@@ -242,7 +242,7 @@
       border: 1px solid rgba(255, 255, 255, 0.8);
       border-radius: 28px;
       display: flex;
-      justify-content: space-around;
+      justify-around: space-around;
       align-items: center;
       padding: 8px 12px;
       z-index: 1000;
@@ -2116,13 +2116,34 @@
       const statuses = ["PLACED", "ACCEPTED", "PREPARING", "READY_FOR_PICKUP", "PICKED_UP", "OUT_FOR_DELIVERY", "DELIVERED"];
       const currentIndex = statuses.indexOf(normStatus);
 
+      // Custom Date & Time Formatter (DD/MM/YYYY, HH:MM AM/PM)
+      const formatCustomDateTime = (timestamp) => {
+        if (!timestamp) return 'N/A';
+        const d = new Date(timestamp);
+        const day = String(d.getDate()).padStart(2, '0');
+        const month = String(d.getMonth() + 1).padStart(2, '0');
+        const year = d.getFullYear();
+        
+        let hours = d.getHours();
+        const minutes = String(d.getMinutes()).padStart(2, '0');
+        const ampm = hours >= 12 ? 'PM' : 'AM';
+        hours = hours % 12;
+        hours = hours ? hours : 12;
+        const strHours = String(hours).padStart(2, '0');
+
+        return `${day}/${month}/${year}, ${strHours}:${minutes} ${ampm}`;
+      };
+
+      const isDelivered = normStatus === 'DELIVERED';
+      const orderDateStr = formatCustomDateTime(o.createdAt);
+      const deliveredDateStr = isDelivered && o.updatedAt ? formatCustomDateTime(o.updatedAt) : null;
+
       const timelineHtml = statuses.map((st, idx) => `
         <li class="timeline-item ${idx <= currentIndex ? 'active' : ''}">
           <h5 style="font-size:13px; font-weight:600;">${st.replace(/_/g, ' ')}</h5>
         </li>
       `).join('');
 
-      const isDelivered = normStatus === 'DELIVERED';
       const riderInfo = window.state.deliveryPartners[o.deliveryUid] || {};
       const riderName = riderInfo.name || "Delivery Partner";
       const riderPhone = riderInfo.phone || "N/A";
@@ -2131,6 +2152,50 @@
       const restaurantName = restaurantInfo.name || "Restaurant";
 
       const riderRating = getRiderRatingDetails(o.deliveryUid);
+
+      // ITEM DETAILS BREAKDOWN (ORDER HISTORY)
+      const itemsListHtml = (o.items || []).map(i => {
+        const variantStr = i.selectedVariant ? ` (${i.selectedVariant.name})` : '';
+        const addonsStr = i.selectedAddons && i.selectedAddons.length > 0 ? `<br><span style="font-size:11px; color:var(--text-muted);">+ ${i.selectedAddons.map(a => a.name).join(', ')}</span>` : '';
+        return `
+          <div class="flex justify-between items-center" style="padding: 8px 0; border-bottom: 1px dashed var(--border-color); font-size: 13px;">
+            <div>
+              <strong>${i.name}${variantStr}</strong> x ${i.qty}
+              ${addonsStr}
+            </div>
+            <strong style="color:var(--text-main);">₹${(Number(i.price) * i.qty).toFixed(2)}</strong>
+          </div>
+        `;
+      }).join('');
+
+      const orderSummaryCardHtml = `
+        <div style="background:var(--bg-card); padding:18px; border-radius:var(--radius-md); border:1px solid var(--border-color); margin-top:16px; box-shadow:var(--shadow-sm);">
+          <div class="flex justify-between items-center" style="margin-bottom:10px; border-bottom:1px solid var(--border-color); padding-bottom:8px;">
+            <h4 style="font-size:15px; font-weight:700;">🛒 Order Items Summary</h4>
+            <span style="font-size:12px; color:var(--text-muted); font-weight:600;">${(o.items || []).length} Items</span>
+          </div>
+
+          <div style="margin-bottom: 12px;">
+            ${itemsListHtml}
+          </div>
+
+          <div style="font-size: 12px; color: var(--text-muted); line-height: 1.6; background: #f8fafc; padding: 12px; border-radius: var(--radius-sm);">
+            <div class="flex justify-between"><span>Subtotal:</span> <span>₹${Number(o.subtotal || 0).toFixed(2)}</span></div>
+            <div class="flex justify-between"><span>Delivery Charge:</span> <span>₹${Number(o.deliveryCharge || 0).toFixed(2)}</span></div>
+            <div class="flex justify-between"><span>GST / Tax:</span> <span>₹${Number(o.tax || 0).toFixed(2)}</span></div>
+            ${Number(o.discount || 0) > 0 ? `<div class="flex justify-between" style="color:var(--success);"><span>Discount:</span> <span>-₹${Number(o.discount).toFixed(2)}</span></div>` : ''}
+            <hr style="margin: 6px 0; border:0; border-top:1px solid var(--border-color);">
+            <div class="flex justify-between" style="font-size: 14px; font-weight: 700; color: var(--text-main);">
+              <span>Grand Total:</span>
+              <span>₹${Number(o.totalAmount || 0).toFixed(2)}</span>
+            </div>
+          </div>
+
+          <button class="btn" style="margin-top: 12px; background: var(--primary); display: flex; align-items: center; justify-content: center; gap: 8px;" onclick="reOrder('${orderId}')">
+            🔄 Re-Order All Items (1-Click)
+          </button>
+        </div>
+      `;
 
       let statusHeaderHtml = '';
       let mapSectionHtml = '';
@@ -2259,16 +2324,22 @@
         `;
       }
 
+      // Order Tracking Header Me Status Ke Sath Date & Time Add Kar Diya Hai
       document.getElementById('order-tracking-content').innerHTML = `
         <div style="display:flex; justify-content:space-between; align-items:center;">
           <div>
             <h3 style="font-size:18px;">Order #${o.orderNumber}</h3>
-            <p style="font-size:12px; color:var(--text-muted); margin-top:4px;">Status: <strong style="color:var(--primary);">${normStatus.replace(/_/g, ' ')}</strong> | Payment: <strong>${o.paymentMethod || 'COD'} (${o.paymentStatus || 'UNPAID'})</strong></p>
+            <p style="font-size:12px; color:var(--text-muted); margin-top:4px; line-height:1.5;">
+              Status: <strong style="color:var(--primary);">${normStatus.replace(/_/g, ' ')}</strong> | Payment: <strong>${o.paymentMethod || 'COD'} (${o.paymentStatus || 'UNPAID'})</strong><br>
+              📅 <strong>Placed On:</strong> ${orderDateStr}
+              ${deliveredDateStr ? `<br><span style="color:var(--success); font-weight:600;">✅ <strong>Delivered On:</strong> ${deliveredDateStr}</span>` : ''}
+            </p>
           </div>
         </div>
         
         ${statusHeaderHtml}
         ${mapSectionHtml}
+        ${orderSummaryCardHtml}
         ${ratingSectionHtml}
 
         <ul class="timeline" style="margin-top:18px;">${timelineHtml}</ul>
