@@ -658,6 +658,27 @@
     let liveLocationRef = null;
     let singleOrderListenerRef = null;
 
+    // REAL-TIME LOCATION PERMISSION POLLING CHECK (HAR 2 SECONDS ME CHECK KAREGA)
+    setInterval(() => {
+      if (navigator.permissions && navigator.permissions.query) {
+        navigator.permissions.query({ name: 'geolocation' }).then((result) => {
+          const isAllowed = (result.state === 'granted');
+          if (window.state.isLocationAllowed !== isAllowed) {
+            window.state.isLocationAllowed = isAllowed;
+            const locationTextEl = document.getElementById('header-location-text');
+            if (!isAllowed) {
+              if (locationTextEl) locationTextEl.innerText = "Location Permission Denied";
+              window.state.currentLocation = null;
+              window.state.detectedAddress = null;
+            } else if (!window.state.currentLocation) {
+              fetchCustomerLocation(false);
+            }
+            renderRestaurants();
+          }
+        }).catch(() => {});
+      }
+    }, 2000);
+
     // Helper to hide loader overlay smoothly
     function hideLoader() {
       const loader = document.getElementById('page-loader');
@@ -2176,6 +2197,7 @@
       let statusHeaderHtml = '';
       let mapSectionHtml = '';
       let ratingSectionHtml = '';
+      let orderSummaryCardHtml = ''; // Active/In-progress orders me hide rahega
 
       // ITEM DETAILS BREAKDOWN (ORDER SUMMARY WITH RESTAURANT DETAILS)
       const itemsListHtml = (o.items || []).map(i => {
@@ -2192,7 +2214,7 @@
         `;
       }).join('');
 
-      const orderSummaryCardHtml = `
+      orderSummaryCardHtml = `
         <div style="background:var(--bg-card); padding:18px; border-radius:var(--radius-md); border:1px solid var(--border-color); margin-top:16px; box-shadow:var(--shadow-sm);">
           <div style="margin-bottom:10px; border-bottom:1px solid var(--border-color); padding-bottom:8px;">
             <h4 style="font-size:15px; font-weight:700; color:var(--primary);">🏬 ${restaurantName}</h4>
