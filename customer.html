@@ -28,7 +28,7 @@
     :root {
       --primary: #ff4757;
       --primary-hover: #e03f4e;
-      --primary-soft: rgba(255, 71, 87, 0.08);
+      --primary-soft: rgba(255, 71, 87, 0.12);
       --bg-body: #f4f6f8;
       --bg-card: #ffffff;
       --text-main: #1e293b;
@@ -52,7 +52,7 @@
       min-height: 100vh; 
       display: flex; 
       flex-direction: column; 
-      padding-bottom: 100px !important; 
+      padding-bottom: 95px !important; 
       -webkit-tap-highlight-color: transparent;
     }
     
@@ -131,8 +131,9 @@
 
     /* APP HEADER */
     .app-header { 
-      background: rgba(255, 255, 255, 0.9); 
-      backdrop-filter: blur(10px);
+      background: rgba(255, 255, 255, 0.92); 
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
       padding: 12px 20px; 
       border-bottom: 1px solid var(--border-color); 
       display: flex; 
@@ -142,9 +143,28 @@
       top: 0; 
       z-index: 100; 
     }
-    .app-title { font-size: 20px; font-weight: 800; color: var(--primary); letter-spacing: -0.5px; }
+    .app-title { 
+      font-size: 21px; 
+      font-weight: 800; 
+      color: var(--primary); 
+      letter-spacing: -0.5px; 
+      cursor: pointer;
+      user-select: none;
+      transition: transform 0.2s ease, opacity 0.2s ease;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+    .app-title:hover {
+      opacity: 0.9;
+      transform: scale(1.02);
+    }
+    .app-title:active {
+      transform: scale(0.98);
+    }
+
     .location-display-bar {
-      display: flex; align-items: center; gap: 6px; background: #f1f5f9; padding: 7px 12px; border-radius: 20px; font-size: 12px; font-weight: 600; color: var(--text-main); max-width: 220px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; cursor: pointer; transition: background 0.2s;
+      display: flex; align-items: center; gap: 6px; background: #f1f5f9; padding: 7px 12px; border-radius: 20px; font-size: 12px; font-weight: 600; color: var(--text-main); max-width: 200px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; cursor: pointer; transition: background 0.2s;
     }
     .location-display-bar:hover { background: #e2e8f0; }
 
@@ -205,11 +225,11 @@
     /* PROFESSIONAL FLOATING CART BAR */
     .cart-float-bar {
       position: fixed;
-      bottom: 82px;
+      bottom: 85px;
       left: 50%;
       transform: translateX(-50%);
       width: calc(100% - 32px);
-      max-width: 568px;
+      max-width: 550px;
       background: linear-gradient(135deg, #ff4757, #ff6b81);
       color: white;
       padding: 14px 20px;
@@ -228,41 +248,40 @@
       box-shadow: 0 14px 30px rgba(255, 71, 87, 0.45);
     }
 
-    /* MODERN FLOATING BOTTOM NAV BAR */
+    /* USER-FRIENDLY & PREMIUM FLOATING BOTTOM NAV BAR */
     .bottom-nav {
       position: fixed;
-      bottom: 14px;
+      bottom: 16px;
       left: 50%;
       transform: translateX(-50%);
       width: calc(100% - 24px);
-      max-width: 580px;
+      max-width: 480px;
       background: rgba(255, 255, 255, 0.95);
-      backdrop-filter: blur(16px);
-      -webkit-backdrop-filter: blur(16px);
-      border: 1px solid rgba(255, 255, 255, 0.8);
-      border-radius: 28px;
+      backdrop-filter: blur(20px);
+      -webkit-backdrop-filter: blur(20px);
+      border: 1px solid rgba(226, 232, 240, 0.8);
+      border-radius: 32px;
       display: flex;
-      justify-around: space-around;
+      justify-content: space-around;
       align-items: center;
-      padding: 8px 12px;
+      padding: 6px 10px;
       z-index: 1000;
-      box-shadow: 0 12px 32px rgba(0, 0, 0, 0.08), 0 2px 6px rgba(0, 0, 0, 0.04);
+      box-shadow: 0 12px 35px rgba(0, 0, 0, 0.1), 0 4px 12px rgba(0, 0, 0, 0.04);
     }
 
     .nav-item {
       position: relative;
       display: flex;
-      flex-direction: column;
+      flex-direction: flex-row;
       align-items: center;
       justify-content: center;
-      gap: 4px;
-      color: #94a3b8;
-      font-size: 11px;
+      gap: 8px;
+      color: #64748b;
+      font-size: 13px;
       font-weight: 600;
       cursor: pointer;
-      flex: 1;
-      padding: 8px 12px;
-      border-radius: 18px;
+      padding: 10px 18px;
+      border-radius: 24px;
       transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
       user-select: none;
     }
@@ -270,32 +289,33 @@
     .nav-item svg {
       width: 22px;
       height: 22px;
-      fill: currentColor;
-      transition: transform 0.3s ease, fill 0.3s ease;
+      fill: none;
+      stroke: currentColor;
+      stroke-width: 2;
+      stroke-linecap: round;
+      stroke-linejoin: round;
+      transition: transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1), stroke 0.3s ease;
     }
 
-    .nav-item:hover:not(.active) { color: #64748b; background: rgba(0, 0, 0, 0.03); }
-    .nav-item:hover:not(.active) svg { transform: translateY(-2px); }
+    .nav-item:hover:not(.active) { 
+      color: var(--primary); 
+      background: rgba(255, 71, 87, 0.05); 
+    }
+    
+    .nav-item:active {
+      transform: scale(0.94);
+    }
 
     .nav-item.active {
       color: var(--primary);
       font-weight: 700;
       background: var(--primary-soft);
+      box-shadow: inset 0 0 0 1px rgba(255, 71, 87, 0.15);
     }
 
     .nav-item.active svg {
-      fill: var(--primary);
-      transform: scale(1.15) translateY(-1px);
-    }
-
-    .nav-item.active::after {
-      content: '';
-      position: absolute;
-      top: 5px;
-      width: 4px;
-      height: 4px;
-      background-color: var(--primary);
-      border-radius: 50%;
+      stroke: var(--primary);
+      transform: scale(1.1);
     }
 
     .timeline { list-style: none; padding: 20px 0; position: relative; }
@@ -359,7 +379,7 @@
 </head>
 <body>
 
-  <!-- Full-Page Loading Overlay (Hides screen until Auth State is verified) -->
+  <!-- Full-Page Loading Overlay -->
   <div id="page-loader">
     <div class="spinner"></div>
     <div style="font-weight: 700; color: var(--text-muted); font-size: 14px;">Loading Hunger Food...</div>
@@ -369,7 +389,7 @@
   <audio id="delivery-sound" src="https://assets.mixkit.co/active_storage/sfx/2019/2019-preview.mp3" preload="auto"></audio>
   <div id="toast-container"></div>
 
-  <!-- AUTHENTICATION CONTAINER (Hidden initially) -->
+  <!-- AUTHENTICATION CONTAINER -->
   <div id="auth-wrapper" class="hidden">
     <div id="login-view" class="auth-container">
       <h2>Hunger Food</h2>
@@ -422,12 +442,16 @@
   <!-- MAIN APP CONTAINER -->
   <div id="app-container" class="hidden flex flex-col" style="flex:1;">
     <header class="app-header">
-      <div class="app-title">Hunger Food</div>
+      <!-- CLICKING LOGO / TITLE SWAPS BACK TO HOME SCREEN -->
+      <div class="app-title" onclick="switchTab('home')" title="Go to Home Screen">
+        <span>🍔</span> Hunger Food
+      </div>
+      
       <div class="location-display-bar" onclick="fetchCustomerLocation(true)">
         <span>📍</span>
         <span id="header-location-text">Detecting location...</span>
       </div>
-      <div id="header-profile-btn" style="cursor:pointer; font-size:13px; font-weight:600;" onclick="switchTab('profile')">Profile</div>
+      <div id="header-profile-btn" style="cursor:pointer; font-size:13px; font-weight:600; color:var(--text-muted);" onclick="switchTab('profile')">Profile</div>
     </header>
 
     <main class="main-view" style="flex:1;">
@@ -549,25 +573,31 @@
       <div style="font-weight: 600;">View Cart →</div>
     </div>
 
-    <!-- UPDATED PROFESSIONAL BOTTOM NAVIGATION BAR -->
+    <!-- MODERN USER-FRIENDLY BOTTOM NAVIGATION BAR -->
     <nav class="bottom-nav">
       <div class="nav-item active" onclick="switchTab('home')">
         <svg viewBox="0 0 24 24">
-          <path d="M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8z"/>
+          <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path>
+          <polyline points="9 22 9 12 15 12 15 22"></polyline>
         </svg>
         <span>Home</span>
       </div>
 
       <div class="nav-item" onclick="switchTab('orders')">
         <svg viewBox="0 0 24 24">
-          <path d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm-2 10h-4v4h-2v-4H7v-2h4V7h2v4h4v2z"/>
+          <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+          <polyline points="14 2 14 8 20 8"></polyline>
+          <line x1="16" y1="13" x2="8" y2="13"></line>
+          <line x1="16" y1="17" x2="8" y2="17"></line>
+          <polyline points="10 9 9 9 8 9"></polyline>
         </svg>
         <span>Orders</span>
       </div>
 
       <div class="nav-item" onclick="switchTab('profile')">
         <svg viewBox="0 0 24 24">
-          <path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"/>
+          <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
+          <circle cx="12" cy="7" r="4"></circle>
         </svg>
         <span>Profile</span>
       </div>
@@ -654,11 +684,11 @@
     let riderMarker = null;
     let routingControl = null;
     let previousOrderStatuses = {};
-    let lastSpokenStatus = {}; // Tracker for preventing duplicate voice notifications
+    let lastSpokenStatus = {};
     let liveLocationRef = null;
     let singleOrderListenerRef = null;
 
-    // REAL-TIME LOCATION PERMISSION POLLING CHECK (HAR 2 SECONDS ME CHECK KAREGA)
+    // REAL-TIME LOCATION PERMISSION POLLING CHECK
     setInterval(() => {
       if (navigator.permissions && navigator.permissions.query) {
         navigator.permissions.query({ name: 'geolocation' }).then((result) => {
@@ -679,13 +709,11 @@
       }
     }, 2000);
 
-    // Helper to hide loader overlay smoothly
     function hideLoader() {
       const loader = document.getElementById('page-loader');
       if (loader) loader.classList.add('hidden');
     }
 
-    // Standardized status normalizer function
     window.normalizeStatus = function(statusStr) {
       if (!statusStr) return 'PLACED';
       const clean = statusStr.toString().trim().toUpperCase();
@@ -729,10 +757,9 @@
       Notification.requestPermission();
     }
 
-    // Voice Alert strict single-speak logic
     window.speakStatusAlert = function(orderId, status) {
       const normStatus = window.normalizeStatus(status);
-      if (lastSpokenStatus[orderId] === normStatus) return; // Prevent repeated alert
+      if (lastSpokenStatus[orderId] === normStatus) return;
       lastSpokenStatus[orderId] = normStatus;
 
       window.playNotificationBell();
@@ -792,7 +819,6 @@
       c.appendChild(t); setTimeout(() => t.remove(), 3000);
     };
 
-    // REGISTRATION TIME AUTO LOCATION DETECT FUNCTION
     window.detectSignupLocation = function() {
       const addressInput = document.getElementById('signup-address');
       const checkoutAddressInput = document.getElementById('checkout-address');
@@ -839,7 +865,6 @@
       );
     };
 
-    // AUTOMATIC LIVE LOCATION FETCH & CHECKOUT AUTO-FILL + LOCATION GATE CHECK
     window.fetchCustomerLocation = function(showToastMsg = false) {
       const locationTextEl = document.getElementById('header-location-text');
       const checkoutAddressInput = document.getElementById('checkout-address');
@@ -867,7 +892,6 @@
             window.state.detectedAddress = address;
             if (locationTextEl) locationTextEl.innerText = address;
             
-            // DIRECTLY AUTO-FILL CHECKOUT ADDRESS FIELD
             if (checkoutAddressInput) checkoutAddressInput.value = address;
             
             if (showToastMsg) showToast("📍 Live Location updated!", "success");
@@ -894,7 +918,6 @@
       if (view === 'signup') {
         document.getElementById('login-view').classList.add('hidden');
         document.getElementById('signup-view').classList.remove('hidden');
-        // Auto trigger current location detection on registration view load
         detectSignupLocation();
       } else {
         document.getElementById('signup-view').classList.add('hidden');
@@ -914,7 +937,6 @@
       try {
         let addressVal = document.getElementById('signup-address').value;
         
-        // Safety Fallback: If address field is blank or still detecting, force GPS location fetch
         if (!addressVal || addressVal === "Detecting live GPS location...") {
           showToast("Fetching location before registering...", "info");
           await new Promise((resolve) => {
@@ -956,7 +978,6 @@
       } catch (err) { showToast(err.message, 'danger'); }
     });
 
-    // SECURE AUTH STATE LISTENER (PREVENTS REFRESH FLICKER)
     onAuthStateChanged(auth, async (user) => {
       if (user) {
         window.state.user = user;
@@ -989,7 +1010,6 @@
           document.getElementById('profile-phone').value = profileData.phone || '';
           document.getElementById('profile-address').value = profileData.address || '';
 
-          // DIRECTLY AUTO-FILL CHECKOUT ADDRESS WITH GPS DETECTED LOCATION
           document.getElementById('checkout-address').value = window.state.detectedAddress || profileData.address || '';
           document.getElementById('checkout-phone').value = profileData.phone || '';
 
@@ -1056,7 +1076,6 @@
         renderRestaurants();
       });
 
-      // REAL-TIME ORDERS LISTENER FOR INSTANT ZERO-REFRESH UPDATE
       onValue(ref(db, 'orders'), (snapshot) => {
         const all = snapshot.val() || {};
         const myOrders = Object.fromEntries(
@@ -1067,7 +1086,6 @@
           const oldStatus = previousOrderStatuses[orderId];
           const newStatus = window.normalizeStatus(order.status);
 
-          // Trigger sound & notification on real status transition
           if (oldStatus && oldStatus !== newStatus) {
             window.speakStatusAlert(orderId, newStatus);
             
@@ -1081,7 +1099,6 @@
 
         window.state.orders = myOrders;
         
-        // Re-render Orders List Realtime
         if (!document.getElementById('tab-orders').classList.contains('hidden')) {
           renderOrders();
         }
@@ -1102,16 +1119,13 @@
         }
       });
 
-      // 📢 REAL-TIME BROADCAST NOTIFICATION LISTENERS (FOR ADMIN BROADCASTS)
       setupBroadcastListeners();
     }
 
-    // 📣 REAL-TIME BROADCAST NOTIFICATION LISTENER FUNCTION
     function setupBroadcastListeners() {
       let isInitialLoad = true;
       setTimeout(() => { isInitialLoad = false; }, 3000);
 
-      // Listen to broadcastNotifications node
       onChildAdded(ref(db, 'broadcastNotifications'), (snapshot) => {
         if (isInitialLoad) return;
         const data = snapshot.val();
@@ -1122,7 +1136,6 @@
         }
       });
 
-      // Also listen to fallback notifications node
       onChildAdded(ref(db, 'notifications'), (snapshot) => {
         if (isInitialLoad) return;
         const data = snapshot.val();
@@ -1231,7 +1244,6 @@
     window.switchTab = function(tab) {
       ['tab-home', 'tab-menu', 'tab-cart', 'tab-orders', 'tab-order-detail', 'tab-profile'].forEach(t => document.getElementById(t).classList.add('hidden'));
       
-      // Clean up single order real-time listener if leaving detail tab
       if (tab !== 'order-detail' && singleOrderListenerRef) {
         off(singleOrderListenerRef);
         singleOrderListenerRef = null;
@@ -1247,7 +1259,6 @@
         const addressInput = document.getElementById('checkout-address');
         const phoneInput = document.getElementById('checkout-phone');
 
-        // DIRECTLY AUTO-FILL ADDRESS IN CART VIEW
         if (addressInput) {
           addressInput.value = window.state.detectedAddress || profile.address || '';
         }
@@ -1268,9 +1279,10 @@
       }
       if (tab === 'profile') document.getElementById('tab-profile').classList.remove('hidden');
 
+      // UPDATE BOTTOM NAVIGATION ACTIVE STATES
       document.querySelectorAll('.nav-item').forEach(el => el.classList.remove('active'));
-      if (tab === 'home') document.querySelectorAll('.nav-item')[0].classList.add('active');
-      if (tab === 'orders') document.querySelectorAll('.nav-item')[1].classList.add('active');
+      if (tab === 'home' || tab === 'menu') document.querySelectorAll('.nav-item')[0].classList.add('active');
+      if (tab === 'orders' || tab === 'order-detail') document.querySelectorAll('.nav-item')[1].classList.add('active');
       if (tab === 'profile') document.querySelectorAll('.nav-item')[2].classList.add('active');
 
       updateCartFloat();
@@ -1291,12 +1303,10 @@
       if (window.state.selectedRestaurant) renderMenu();
     };
 
-    // STRICT LOCATION GATE FOR RESTAURANT LISTING
     window.renderRestaurants = function() {
       const container = document.getElementById('restaurants-list');
       const search = document.getElementById('restaurant-search').value.toLowerCase();
       
-      // LOCATION PERMISSION CHECK: AGAR LOCATION OFF YA ALLOW NAHI H TO RESTAURANTS HIDE RAHE
       if (!window.state.isLocationAllowed) {
         container.innerHTML = `
           <div style="background:var(--bg-card); padding:28px 20px; border-radius:var(--radius-lg); border:1px dashed var(--danger); text-align:center; margin-top:20px; box-shadow:var(--shadow-sm);">
@@ -2072,7 +2082,6 @@
         container.innerHTML = `<p style="text-align:center; color:var(--text-muted); padding:20px;">No orders found.</p>`; return;
       }
 
-      // Custom Date & Time Formatter (DD/MM/YYYY, HH:MM AM/PM - without seconds)
       const formatCustomDateTime = (timestamp) => {
         if (!timestamp) return 'N/A';
         const d = new Date(timestamp);
@@ -2084,7 +2093,7 @@
         const minutes = String(d.getMinutes()).padStart(2, '0');
         const ampm = hours >= 12 ? 'PM' : 'AM';
         hours = hours % 12;
-        hours = hours ? hours : 12; // 0 hour ko 12 banana
+        hours = hours ? hours : 12;
         const strHours = String(hours).padStart(2, '0');
 
         return `${day}/${month}/${year}, ${strHours}:${minutes} ${ampm}`;
@@ -2094,7 +2103,6 @@
         const normStatus = window.normalizeStatus(o.status);
         const isDelivered = normStatus === 'DELIVERED';
 
-        // Custom Formatted Date & Time
         const orderDateStr = formatCustomDateTime(o.createdAt);
         const deliveredDateStr = isDelivered && o.updatedAt ? formatCustomDateTime(o.updatedAt) : null;
 
@@ -2105,7 +2113,6 @@
               <span class="badge ${isDelivered ? 'badge-success' : 'badge-danger'}">${normStatus.replace(/_/g, ' ')}</span>
             </div>
 
-            <!-- Order Date & Time Details Below Order ID -->
             <div style="font-size:12px; color:var(--text-muted); margin-top:6px; line-height:1.5;">
               <div>📅 <strong>Order Placed:</strong> ${orderDateStr}</div>
               ${deliveredDateStr ? `<div style="color:var(--success); font-weight:600;">✅ <strong>Delivered On:</strong> ${deliveredDateStr}</div>` : ''}
@@ -2131,13 +2138,11 @@
       window.currentTrackingOrderId = orderId;
       switchTab('order-detail');
       
-      // Detach existing single listener if any
       if (singleOrderListenerRef) {
         off(singleOrderListenerRef);
         singleOrderListenerRef = null;
       }
 
-      // Dedicated Real-Time Listener for active order
       singleOrderListenerRef = ref(db, `orders/${orderId}`);
       onValue(singleOrderListenerRef, (snapshot) => {
         if (snapshot.exists()) {
@@ -2148,7 +2153,6 @@
       });
     };
 
-    // INSTANT REAL-TIME ZERO-REFRESH TRACKING UI
     function renderOrderTrackingUI(orderId, directOrderData = null) {
       const o = directOrderData || window.state.orders[orderId]; 
       if (!o) return;
@@ -2160,7 +2164,6 @@
       const statuses = ["PLACED", "ACCEPTED", "PREPARING", "READY_FOR_PICKUP", "PICKED_UP", "OUT_FOR_DELIVERY", "DELIVERED"];
       const currentIndex = statuses.indexOf(normStatus);
 
-      // Custom Date & Time Formatter (DD/MM/YYYY, HH:MM AM/PM)
       const formatCustomDateTime = (timestamp) => {
         if (!timestamp) return 'N/A';
         const d = new Date(timestamp);
@@ -2201,7 +2204,6 @@
       let mapSectionHtml = '';
       let ratingSectionHtml = '';
 
-      // ITEM DETAILS BREAKDOWN SUMMARY
       const itemsListHtml = (o.items || []).map(i => {
         const variantStr = i.selectedVariant ? ` (${i.selectedVariant.name})` : '';
         const addonsStr = i.selectedAddons && i.selectedAddons.length > 0 ? `<br><span style="font-size:11px; color:var(--text-muted);">+ ${i.selectedAddons.map(a => a.name).join(', ')}</span>` : '';
@@ -2216,7 +2218,6 @@
         `;
       }).join('');
 
-      // ORDER CANCELLED CONDITION
       if (isCancelled) {
         if (liveLocationRef) { off(liveLocationRef); liveLocationRef = null; }
         if (liveMap) { liveMap.remove(); liveMap = null; riderMarker = null; routingControl = null; }
@@ -2227,7 +2228,7 @@
             <p style="font-size:13px;">This order was cancelled.</p>
           </div>
         `;
-        mapSectionHtml = ''; // No map, no OTP, no delivery partner details
+        mapSectionHtml = '';
 
       } else if (isDelivered) {
         if (liveLocationRef) { off(liveLocationRef); liveLocationRef = null; }
@@ -2343,7 +2344,6 @@
         `;
       }
 
-      // ORDER SUMMARY CARD (LIVE TRACKING / ACTIVE ORDERS KE LIYE MAP KE THIK UPAR)
       const orderSummaryCardHtml = `
         <div style="background:var(--bg-card); padding:18px; border-radius:var(--radius-md); border:1px solid var(--border-color); margin-top:16px; box-shadow:var(--shadow-sm);">
           <div style="margin-bottom:10px; border-bottom:1px solid var(--border-color); padding-bottom:8px;">
@@ -2512,7 +2512,6 @@
         const mapElement = document.getElementById('map');
         if (!mapElement) return;
 
-        // Clean up existing map & duplicate listeners
         if (liveLocationRef) {
           off(liveLocationRef);
           liveLocationRef = null;
