@@ -14,7 +14,7 @@
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 
-  <!-- LEAFLET ROUTING MACHINE CDN FOR LIVE ROUTE & ETA -->
+  <!-- LEAFLET ROUTING MACHINE CDN FOR LIVE BLUE ROUTE & ETA -->
   <link rel="stylesheet" href="https://unpkg.com/leaflet-routing-machine@latest/dist/leaflet-routing-machine.css" />
   <script src="https://unpkg.com/leaflet-routing-machine@latest/dist/leaflet-routing-machine.js"></script>
 
@@ -2318,7 +2318,7 @@
         ratingSectionHtml = riderRatingCardHtml + restaurantRatingCardHtml;
 
       } else {
-        // ACCURATE CONDITIONAL RENDER: MAP SHOWS ONLY WHEN RESTAURANT MARKS READY_FOR_PICKUP
+        // ACCURATE CONDITIONAL RENDER: MAP SHOWS ONLY WHEN RESTAURANT MARKS READY_FOR_PICKUP OR LATER
         if (isReadyForPickupOrLater) {
           mapSectionHtml = `
             <div class="restaurant-card" style="padding:16px; margin-top:16px; border-left:4px solid var(--primary);">
@@ -2537,6 +2537,9 @@
       }
     };
 
+    /* ========================================================================= */
+    /* LIVE MAP WITH BLUE ROUTE LINE DRAWING (RIDER -> RESTAURANT -> CUSTOMER) */
+    /* ========================================================================= */
     function initLiveMapTracking(orderId) {
       const order = window.state.orders[orderId];
       if (!order || window.normalizeStatus(order.status) === 'DELIVERED' || window.normalizeStatus(order.status) === 'CANCELLED') return;
@@ -2570,23 +2573,15 @@
           attribution: '© OpenStreetMap'
         }).addTo(liveMap);
 
-        L.marker([restLat, restLng]).addTo(liveMap).bindPopup("<b>🏬 Restaurant</b>");
+        L.marker([restLat, restLng]).addTo(liveMap).bindPopup("<b>🏬 Restaurant Location</b>");
         L.marker([custLat, custLng]).addTo(liveMap).bindPopup("<b>🏡 Delivery Address</b>");
 
         liveLocationRef = ref(db, `orders/${orderId}/liveLocation`);
         onValue(liveLocationRef, (snapshot) => {
           const loc = snapshot.val();
           
-          if (!loc || !loc.lat || !loc.lng) {
-            const etaBadge = document.getElementById('eta-badge');
-            if (etaBadge) {
-              etaBadge.innerHTML = `⌛ Waiting for rider GPS...`;
-            }
-            return;
-          }
-
-          const currentRiderLat = Number(loc.lat);
-          const currentRiderLng = Number(loc.lng);
+          const currentRiderLat = loc && loc.lat ? Number(loc.lat) : restLat;
+          const currentRiderLng = loc && loc.lng ? Number(loc.lng) : restLng;
 
           const bikeIcon = L.icon({
             iconUrl: 'https://cdn-icons-png.flaticon.com/512/3198/3198336.png',
@@ -2607,14 +2602,16 @@
             try { liveMap.removeControl(routingControl); } catch(e) {}
           }
 
+          // BLUE LINE ROUTE (DELIVERY BOY -> RESTAURANT -> CUSTOMER)
           try {
             routingControl = L.Routing.control({
               waypoints: [
                 L.latLng(currentRiderLat, currentRiderLng),
+                L.latLng(restLat, restLng),
                 L.latLng(custLat, custLng)
               ],
               lineOptions: {
-                styles: [{ color: '#ff4757', weight: 5, opacity: 0.8 }]
+                styles: [{ color: '#3b82f6', weight: 6, opacity: 0.85 }]
               },
               createMarker: function() { return null; },
               addWaypoints: false,
@@ -2638,9 +2635,15 @@
             });
           } catch(err) {
             console.error("Routing error:", err);
+            // Fallback polyline blue line
+            L.polyline([
+              [currentRiderLat, currentRiderLng],
+              [restLat, restLng],
+              [custLat, custLng]
+            ], { color: '#3b82f6', weight: 5 }).addTo(liveMap);
           }
 
-          const bounds = L.latLngBounds([ [currentRiderLat, currentRiderLng], [custLat, custLng] ]);
+          const bounds = L.latLngBounds([ [currentRiderLat, currentRiderLng], [restLat, restLng], [custLat, custLng] ]);
           liveMap.fitBounds(bounds, { padding: [40, 40] });
         });
       }, 300);
