@@ -143,7 +143,6 @@
       top: 0; 
       z-index: 100; 
     }
-    /* INTERACTIVE APP LOGO CLICKABLE TO GO HOME */
     .app-title { 
       font-size: 20px; 
       font-weight: 800; 
@@ -249,7 +248,7 @@
       box-shadow: 0 14px 30px rgba(255, 71, 87, 0.45);
     }
 
-    /* REDESIGNED ULTRA-USER-FRIENDLY FLOATING BOTTOM NAVIGATION BAR */
+    /* FLOATING BOTTOM NAVIGATION BAR */
     .bottom-nav {
       position: fixed;
       bottom: 16px;
@@ -263,7 +262,7 @@
       border: 1px solid rgba(226, 232, 240, 0.9);
       border-radius: 32px;
       display: flex;
-      justify-content: space-around;
+      justify-around: space-around;
       align-items: center;
       padding: 6px 8px;
       z-index: 1000;
@@ -572,7 +571,7 @@
       <div style="font-weight: 600;">View Cart →</div>
     </div>
 
-    <!-- REDESIGNED FLOATING NAVIGATION BAR WITH ICON + TEXT CAPSULES -->
+    <!-- FLOATING BOTTOM NAVIGATION BAR -->
     <nav class="bottom-nav">
       <div class="nav-item active" onclick="switchTab('home')">
         <svg viewBox="0 0 24 24">
@@ -1276,7 +1275,6 @@
       }
       if (tab === 'profile') document.getElementById('tab-profile').classList.remove('hidden');
 
-      // ACCURATELY UPDATE BOTTOM NAV HIGHLIGHT STATES
       document.querySelectorAll('.nav-item').forEach(el => el.classList.remove('active'));
       if (tab === 'home' || tab === 'menu') document.querySelectorAll('.nav-item')[0].classList.add('active');
       if (tab === 'orders' || tab === 'order-detail') document.querySelectorAll('.nav-item')[1].classList.add('active');
@@ -2158,6 +2156,9 @@
       const isDelivered = normStatus === 'DELIVERED';
       const isCancelled = normStatus === 'CANCELLED';
 
+      // STATUS CHECK FOR RIDER & MAP VISIBILITY (ONLY WHEN READY_FOR_PICKUP, PICKED_UP, OR OUT_FOR_DELIVERY)
+      const isReadyForPickupOrLater = ['READY_FOR_PICKUP', 'PICKED_UP', 'OUT_FOR_DELIVERY'].includes(normStatus);
+
       const statuses = ["PLACED", "ACCEPTED", "PREPARING", "READY_FOR_PICKUP", "PICKED_UP", "OUT_FOR_DELIVERY", "DELIVERED"];
       const currentIndex = statuses.indexOf(normStatus);
 
@@ -2294,51 +2295,63 @@
         ratingSectionHtml = riderRatingCardHtml + restaurantRatingCardHtml;
 
       } else {
-        mapSectionHtml = `
-          <div class="restaurant-card" style="padding:16px; margin-top:16px; border-left:4px solid var(--primary);">
-            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px;">
-              <h4 style="color:var(--primary); margin:0; font-size:15px;">📍 Live Delivery Bike Tracking</h4>
-              <div id="eta-badge" style="background:var(--primary); color:white; padding:4px 12px; border-radius:20px; font-size:12px; font-weight:700;">
-                ⏱️ Waiting for rider GPS...
+        // CONDITIONAL RENDERING: SHOW MAP & RIDER DETAILS ONLY WHEN READY_FOR_PICKUP OR LATER
+        if (isReadyForPickupOrLater) {
+          mapSectionHtml = `
+            <div class="restaurant-card" style="padding:16px; margin-top:16px; border-left:4px solid var(--primary);">
+              <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px;">
+                <h4 style="color:var(--primary); margin:0; font-size:15px;">📍 Live Delivery Bike Tracking</h4>
+                <div id="eta-badge" style="background:var(--primary); color:white; padding:4px 12px; border-radius:20px; font-size:12px; font-weight:700;">
+                  ⏱️ Waiting for rider GPS...
+                </div>
+              </div>
+              
+              <div id="live-map-container" style="height: 340px; width: 100%; border-radius: var(--radius-md); border: 1px solid var(--border-color); overflow: hidden; position:relative;">
+                <div id="map" style="height: 100%; width: 100%;"></div>
               </div>
             </div>
-            
-            <div id="live-map-container" style="height: 340px; width: 100%; border-radius: var(--radius-md); border: 1px solid var(--border-color); overflow: hidden; position:relative;">
-              <div id="map" style="height: 100%; width: 100%;"></div>
-            </div>
-          </div>
 
-          <div style="background:var(--bg-card); padding:18px; border-radius:var(--radius-md); border:1px solid var(--border-color); margin-top:16px; box-shadow:var(--shadow-sm);">
-            <h4 style="font-size:15px;">Delivery OTP: <span style="color:var(--primary); font-weight:800;">${o.deliveryOtp || o.otp}</span></h4>
-            <p style="font-size:12px; color:var(--text-muted); margin-top:4px;">Share this OTP with the delivery partner upon arrival.</p>
-            
-            ${o.deliveryUid ? `
-              <div style="margin-top:14px; padding:14px; background:#f8fafc; border-radius:var(--radius-sm); border:1px solid var(--border-color);">
-                <div style="font-size:13px; font-weight:600; color:var(--text-main); margin-bottom:6px; display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:6px;">
-                  <div>
-                    <span>🛵 Assigned Delivery Partner:</span>
-                    <strong style="color:var(--primary); font-size:14px;">${riderName}</strong>
+            <div style="background:var(--bg-card); padding:18px; border-radius:var(--radius-md); border:1px solid var(--border-color); margin-top:16px; box-shadow:var(--shadow-sm);">
+              <h4 style="font-size:15px;">Delivery OTP: <span style="color:var(--primary); font-weight:800;">${o.deliveryOtp || o.otp}</span></h4>
+              <p style="font-size:12px; color:var(--text-muted); margin-top:4px;">Share this OTP with the delivery partner upon arrival.</p>
+              
+              ${o.deliveryUid ? `
+                <div style="margin-top:14px; padding:14px; background:#f8fafc; border-radius:var(--radius-sm); border:1px solid var(--border-color);">
+                  <div style="font-size:13px; font-weight:600; color:var(--text-main); margin-bottom:6px; display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:6px;">
+                    <div>
+                      <span>🛵 Assigned Delivery Partner:</span>
+                      <strong style="color:var(--primary); font-size:14px;">${riderName}</strong>
+                    </div>
+                    <span class="rider-rating-badge">
+                      ⭐ ${riderRating.avg} (${riderRating.count} reviews)
+                    </span>
                   </div>
-                  <span class="rider-rating-badge">
-                    ⭐ ${riderRating.avg} (${riderRating.count} reviews)
-                  </span>
+                  <div style="font-size:13px; color:var(--text-muted); margin-bottom:12px;">
+                    📞 Mobile Number: <strong style="color:var(--text-main);">${riderPhone}</strong>
+                  </div>
+                  <div class="flex gap-2">
+                    <a href="tel:${riderPhone}" class="btn" style="text-decoration:none; text-align:center; background:#10b981; flex:1; padding:9px 12px; font-size:13px; display:flex; align-items:center; justify-content:center;">
+                      📞 Call Rider
+                    </a>
+                    <button class="btn btn-relative" style="background:#3b82f6; flex:1; padding:9px 12px; font-size:13px;" onclick="openChatModal('${orderId}')">
+                      💬 Chat
+                      <span id="chat-badge-${orderId}" class="chat-badge hidden">0</span>
+                    </button>
+                  </div>
                 </div>
-                <div style="font-size:13px; color:var(--text-muted); margin-bottom:12px;">
-                  📞 Mobile Number: <strong style="color:var(--text-main);">${riderPhone}</strong>
-                </div>
-                <div class="flex gap-2">
-                  <a href="tel:${riderPhone}" class="btn" style="text-decoration:none; text-align:center; background:#10b981; flex:1; padding:9px 12px; font-size:13px; display:flex; align-items:center; justify-content:center;">
-                    📞 Call Rider
-                  </a>
-                  <button class="btn btn-relative" style="background:#3b82f6; flex:1; padding:9px 12px; font-size:13px;" onclick="openChatModal('${orderId}')">
-                    💬 Chat
-                    <span id="chat-badge-${orderId}" class="chat-badge hidden">0</span>
-                  </button>
-                </div>
-              </div>
-            ` : '<p style="font-size:12px; color:var(--warning); margin-top:8px;">Assigning Delivery Partner...</p>'}
-          </div>
-        `;
+              ` : '<p style="font-size:12px; color:var(--warning); margin-top:8px;">Assigning Delivery Partner...</p>'}
+            </div>
+          `;
+        } else {
+          // SHOW CLEAN MESSAGE WHILE RESTAURANT PREPARES ORDER
+          mapSectionHtml = `
+            <div style="background:var(--bg-card); padding:20px; border-radius:var(--radius-md); border:1px dashed var(--primary); margin-top:16px; text-align:center; box-shadow:var(--shadow-sm);">
+              <div style="font-size:32px; margin-bottom:8px;">👨‍🍳</div>
+              <h4 style="font-size:15px; color:var(--text-main); margin-bottom:4px; font-weight:700;">Food is being prepared</h4>
+              <p style="font-size:12px; color:var(--text-muted);">Delivery partner details and live map tracking will appear as soon as the restaurant marks the order <strong>Ready for Pickup</strong>.</p>
+            </div>
+          `;
+        }
       }
 
       const orderSummaryCardHtml = `
@@ -2399,7 +2412,7 @@
         ${normStatus === 'PLACED' ? `<button class="btn btn-outline" style="border-color:var(--danger); color:var(--danger); margin-top:12px;" onclick="cancelCustomerOrder('${orderId}')">Cancel Order</button>` : ''}
       `;
 
-      if (!isDelivered && !isCancelled) {
+      if (!isDelivered && !isCancelled && isReadyForPickupOrLater) {
         initLiveMapTracking(orderId);
       }
       window.updateAllChatBadges();
