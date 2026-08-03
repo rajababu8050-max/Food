@@ -14,7 +14,7 @@
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 
-  <!-- LEAFLET ROUTING MACHINE CDN FOR LIVE BLUE ROUTE & ETA -->
+  <!-- LEAFLET ROUTING MACHINE CDN FOR LIVE ROUTE & ETA -->
   <link rel="stylesheet" href="https://unpkg.com/leaflet-routing-machine@latest/dist/leaflet-routing-machine.css" />
   <script src="https://unpkg.com/leaflet-routing-machine@latest/dist/leaflet-routing-machine.js"></script>
 
@@ -86,7 +86,7 @@
       animation: pulseGlow 1.5s ease-in-out infinite;
     }
 
-    /* FULL PAGE LOADER OVERLAY TO PREVENT FLICKER */
+    /* FULL PAGE LOADER OVERLAY */
     #page-loader {
       position: fixed;
       top: 0;
@@ -245,7 +245,7 @@
       background: transparent; border: none; color: white; font-weight: 700; font-size: 16px; cursor: pointer; padding: 0 4px; outline: none;
     }
 
-    /* PROFESSIONAL FLOATING CART BAR */
+    /* FLOATING CART BAR */
     .cart-float-bar {
       position: fixed;
       bottom: 88px;
@@ -464,7 +464,6 @@
   <!-- MAIN APP CONTAINER -->
   <div id="app-container" class="hidden flex flex-col" style="flex:1;">
     <header class="app-header">
-      <!-- HEADER LOGO CLICK DIRECTLY TRIGGERS HOME TAB -->
       <div class="app-title" onclick="switchTab('home')" title="Go to Home">
         <span>🍔</span> Hunger Food
       </div>
@@ -2538,12 +2537,13 @@
     };
 
     /* ========================================================================= */
-    /* LIVE MAP WITH BLUE ROUTE LINE DRAWING (RIDER -> RESTAURANT -> CUSTOMER) */
+    /* LIVE MAP WITH DISTINCT ICONS & DYNAMIC BLUE ROUTE LINE DRAWING           */
     /* ========================================================================= */
     function initLiveMapTracking(orderId) {
       const order = window.state.orders[orderId];
       if (!order || window.normalizeStatus(order.status) === 'DELIVERED' || window.normalizeStatus(order.status) === 'CANCELLED') return;
 
+      const normStatus = window.normalizeStatus(order.status);
       const restaurant = window.state.restaurants[order.restaurantId] || {};
       const restLat = Number(restaurant.lat) || (order.customerGeoLocation ? Number(order.customerGeoLocation.lat) : 28.6139);
       const restLng = Number(restaurant.lng) || (order.customerGeoLocation ? Number(order.customerGeoLocation.lng) : 77.2090);
@@ -2573,8 +2573,23 @@
           attribution: '© OpenStreetMap'
         }).addTo(liveMap);
 
-        L.marker([restLat, restLng]).addTo(liveMap).bindPopup("<b>🏬 Restaurant Location</b>");
-        L.marker([custLat, custLng]).addTo(liveMap).bindPopup("<b>🏡 Delivery Address</b>");
+        // DISTINCT CUSTOM ICONS FOR RESTAURANT & HOME
+        const restaurantIcon = L.icon({
+          iconUrl: 'https://cdn-icons-png.flaticon.com/512/4287/4287725.png',
+          iconSize: [38, 38],
+          iconAnchor: [19, 38],
+          popupAnchor: [0, -38]
+        });
+
+        const homeIcon = L.icon({
+          iconUrl: 'https://cdn-icons-png.flaticon.com/512/25/25694.png',
+          iconSize: [36, 36],
+          iconAnchor: [18, 36],
+          popupAnchor: [0, -36]
+        });
+
+        L.marker([restLat, restLng], { icon: restaurantIcon }).addTo(liveMap).bindPopup("<b>🏬 Restaurant Location</b>");
+        L.marker([custLat, custLng], { icon: homeIcon }).addTo(liveMap).bindPopup("<b>🏡 Delivery Address</b>");
 
         liveLocationRef = ref(db, `orders/${orderId}/liveLocation`);
         onValue(liveLocationRef, (snapshot) => {
@@ -2602,14 +2617,25 @@
             try { liveMap.removeControl(routingControl); } catch(e) {}
           }
 
-          // BLUE LINE ROUTE (DELIVERY BOY -> RESTAURANT -> CUSTOMER)
+          // DYNAMIC BLUE LINE ROUTE BASED ON DELIVERY STAGE
+          // 1. READY_FOR_PICKUP: Route from Rider -> Restaurant (Going to pick up food)
+          // 2. PICKED_UP / OUT_FOR_DELIVERY: Route from Restaurant -> Customer (Going to deliver food)
+          let routeWaypoints = [];
+          if (normStatus === 'READY_FOR_PICKUP') {
+            routeWaypoints = [
+              L.latLng(currentRiderLat, currentRiderLng),
+              L.latLng(restLat, restLng)
+            ];
+          } else {
+            routeWaypoints = [
+              L.latLng(restLat, restLng),
+              L.latLng(custLat, custLng)
+            ];
+          }
+
           try {
             routingControl = L.Routing.control({
-              waypoints: [
-                L.latLng(currentRiderLat, currentRiderLng),
-                L.latLng(restLat, restLng),
-                L.latLng(custLat, custLng)
-              ],
+              waypoints: routeWaypoints,
               lineOptions: {
                 styles: [{ color: '#3b82f6', weight: 6, opacity: 0.85 }]
               },
@@ -2629,18 +2655,14 @@
 
                 const etaBadge = document.getElementById('eta-badge');
                 if (etaBadge) {
-                  etaBadge.innerHTML = `🛵 Arriving in <strong>${travelTimeMinutes} mins</strong> (${distanceKm} km)`;
+                  const stageText = normStatus === 'READY_FOR_PICKUP' ? 'Rider arriving at restaurant in' : 'Arriving at home in';
+                  etaBadge.innerHTML = `🛵 ${stageText} <strong>${travelTimeMinutes} mins</strong> (${distanceKm} km)`;
                 }
               }
             });
           } catch(err) {
             console.error("Routing error:", err);
-            // Fallback polyline blue line
-            L.polyline([
-              [currentRiderLat, currentRiderLng],
-              [restLat, restLng],
-              [custLat, custLng]
-            ], { color: '#3b82f6', weight: 5 }).addTo(liveMap);
+            L.polyline(routeWaypoints, { color: '#3b82f6', weight: 5 }).addTo(liveMap);
           }
 
           const bounds = L.latLngBounds([ [currentRiderLat, currentRiderLng], [restLat, restLng], [custLat, custLng] ]);
