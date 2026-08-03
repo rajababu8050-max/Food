@@ -2179,7 +2179,7 @@
       const isDelivered = normStatus === 'DELIVERED';
       const isCancelled = normStatus === 'CANCELLED';
 
-      // RIDER & MAP DETAILS SHOW ONLY WHEN RESTAURANT MARKS READY_FOR_PICKUP OR LATER
+      // MAP AND RIDER DETAILS ARE VISIBLE ONLY WHEN RESTAURANT MARKS READY_FOR_PICKUP OR LATER
       const isReadyForPickupOrLater = ['READY_FOR_PICKUP', 'PICKED_UP', 'OUT_FOR_DELIVERY'].includes(normStatus);
 
       const statuses = ["PLACED", "ACCEPTED", "PREPARING", "READY_FOR_PICKUP", "PICKED_UP", "OUT_FOR_DELIVERY", "DELIVERED"];
@@ -2318,7 +2318,7 @@
         ratingSectionHtml = riderRatingCardHtml + restaurantRatingCardHtml;
 
       } else {
-        // ACCURATE ORDER STATUS UI FLOW
+        // ACCURATE CONDITIONAL RENDER: MAP SHOWS ONLY WHEN RESTAURANT MARKS READY_FOR_PICKUP
         if (isReadyForPickupOrLater) {
           mapSectionHtml = `
             <div class="restaurant-card" style="padding:16px; margin-top:16px; border-left:4px solid var(--primary);">
@@ -2366,21 +2366,19 @@
             </div>
           `;
         } else if (normStatus === 'PLACED') {
-          // 1. ORDER PLACED STATE (WAITING FOR CONFIRMATION)
           mapSectionHtml = `
             <div style="background:var(--bg-card); padding:22px 20px; border-radius:var(--radius-md); border:1px dashed var(--warning); margin-top:16px; text-align:center; box-shadow:var(--shadow-sm);">
               <div class="waiting-pulse" style="margin-bottom:8px;">⏳</div>
               <h4 style="font-size:15px; color:var(--text-main); margin-bottom:4px; font-weight:700;">Order Placed! Waiting for Confirmation</h4>
-              <p style="font-size:12px; color:var(--text-muted);">Aapka order restaurant ke paas bhej diya gaya hai. Restaurant ke accept karte hi khana banna shuru ho jayega.</p>
+              <p style="font-size:12px; color:var(--text-muted);">Aapka order restaurant ke paas bhej diya gaya hai. Confirmed hone par khana banna shuru hoga.</p>
             </div>
           `;
         } else if (normStatus === 'ACCEPTED' || normStatus === 'PREPARING') {
-          // 2. FOOD PREPARING STATE (WITH COOKING ANIMATION)
           mapSectionHtml = `
             <div style="background:var(--bg-card); padding:22px 20px; border-radius:var(--radius-md); border:1px dashed var(--primary); margin-top:16px; text-align:center; box-shadow:var(--shadow-sm);">
               <div class="cooking-animation" style="margin-bottom:8px;">🍳</div>
               <h4 style="font-size:15px; color:var(--primary); margin-bottom:4px; font-weight:700;">Khana Tayar Ho Raha Hai...</h4>
-              <p style="font-size:12px; color:var(--text-muted);">Restaurant ne order accept kar liya hai aur aapka khana tayaar kiya ja raha hai. Ready for pickup hone par delivery partner details aur map tracking start ho jayegi.</p>
+              <p style="font-size:12px; color:var(--text-muted);">Restaurant ne order accept kar liya hai aur aapka swadist khana tayaar kiya ja raha hai. Restaurant ke "Ready for Pickup" mark karte hi live map tracking start ho jayegi.</p>
             </div>
           `;
         }
