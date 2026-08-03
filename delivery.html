@@ -220,7 +220,7 @@
 </head>
 <body>
 
-  <!-- Full-Page Loading Overlay (Prevents Refresh Flickering) -->
+  <!-- Full-Page Loading Overlay -->
   <div id="page-loader">
     <div class="spinner"></div>
     <div style="font-weight: 700; color: var(--text-muted); font-size: 14px;">Loading Delivery Portal...</div>
@@ -229,7 +229,7 @@
   <audio id="pickup-sound" src="https://assets.mixkit.co/active_storage/sfx/2869/2869-preview.mp3" preload="auto"></audio>
   <div id="toast-container"></div>
 
-  <!-- AUTHENTICATION (Hidden initially) -->
+  <!-- AUTHENTICATION -->
   <div id="auth-wrapper" class="hidden">
     <div id="login-view" class="auth-container">
       <div class="auth-card">
@@ -469,13 +469,11 @@
     let globalGpsWatchId = null;
     let previousReadyOrderIds = null;
 
-    // Helper to hide loader overlay smoothly
     function hideLoader() {
       const loader = document.getElementById('page-loader');
       if (loader) loader.classList.add('hidden');
     }
 
-    // Standardized status normalizer function
     window.normalizeStatus = function(statusStr) {
       if (!statusStr) return 'PLACED';
       const clean = statusStr.toString().trim().toUpperCase();
@@ -601,7 +599,6 @@
       } catch (err) { showToast(err.message, 'danger'); }
     });
 
-    // SECURE AUTH STATE LISTENER (PREVENTS REFRESH FLICKER)
     onAuthStateChanged(auth, async (user) => {
       if (user) {
         window.state.user = user;
@@ -741,7 +738,7 @@
       }
     };
 
-    // 1. DIRECTIONS TO RESTAURANT
+    // DIRECTIONS TO RESTAURANT
     window.openRestaurantDirections = function(restLat, restLng, restAddress = '', restName = '') {
       showToast("🚀 Opening Navigation to Restaurant...", "info");
 
@@ -782,7 +779,7 @@
       }
     };
 
-    // 2. DIRECTIONS TO CUSTOMER LIVE GPS LOCATION
+    // DIRECTIONS TO CUSTOMER LIVE GPS LOCATION
     window.openCustomerDirections = function(custLat, custLng, custAddress = '', custName = '') {
       showToast("🗺️ Launching Directions to Customer...", "info");
 
@@ -822,6 +819,39 @@
         launchCustomerMap(null);
       }
     };
+
+    // HELPER TO LAUNCH DIRECT NAVIGATION FROM RESTAURANT TO CUSTOMER ON "START OUT FOR DELIVERY"
+    function launchRouteFromRestaurantToCustomer(order) {
+      const r = window.state.restaurants[order.restaurantId] || {};
+      const restLat = r.lat || order.restaurantLat || 0;
+      const restLng = r.lng || order.restaurantLng || 0;
+      const restName = r.name || order.restaurantName || 'Restaurant';
+      const restAddress = r.address || order.restaurantAddress || '';
+
+      const custLat = (order.customerGeoLocation && order.customerGeoLocation.lat) ? order.customerGeoLocation.lat : 0;
+      const custLng = (order.customerGeoLocation && order.customerGeoLocation.lng) ? order.customerGeoLocation.lng : 0;
+      const custName = order.customerName || 'Customer';
+      const custAddress = order.address || '';
+
+      let originParam = "";
+      if (restLat && restLng && Number(restLat) !== 0 && Number(restLat) !== 28.6139) {
+        originParam = `${restLat},${restLng}`;
+      } else {
+        const restQuery = [restName, restAddress].filter(Boolean).join(', ').trim();
+        originParam = encodeURIComponent(restQuery || restAddress || 'Restaurant');
+      }
+
+      let destinationParam = "";
+      if (custLat && custLng && Number(custLat) !== 0) {
+        destinationParam = `${custLat},${custLng}`;
+      } else {
+        const custQuery = [custName, custAddress].filter(Boolean).join(', ').trim();
+        destinationParam = encodeURIComponent(custQuery || custAddress || 'Customer Address');
+      }
+
+      const mapsUrl = `https://www.google.com/maps/dir/?api=1&origin=${originParam}&destination=${destinationParam}&travelmode=bicycling`;
+      window.open(mapsUrl, '_blank');
+    }
 
     function renderAssignedOrders() {
       const container = document.getElementById('assigned-orders-container');
@@ -929,8 +959,10 @@
       window.updateAllChatBadges();
     }
 
+    // UPDATED FUNCTION: STARTS OUT FOR DELIVERY AND DIRECTLY LAUNCHES GOOGLE MAPS NAVIGATION (RESTAURANT -> CUSTOMER)
     window.startOutForDelivery = async function(orderId) {
       try {
+        const order = window.state.assignedOrders[orderId];
         const gps = window.state.currentGpsLocation || { lat: 0, lng: 0 };
         
         await update(ref(db, `orders/${orderId}`), { 
@@ -947,7 +979,13 @@
           });
         }
 
-        showToast("🚀 Order is OUT FOR DELIVERY! Live Tracking Shared with Customer.", "success");
+        showToast("🚀 Order OUT FOR DELIVERY! Opening Google Maps Navigation...", "success");
+
+        // AUTOMATICALLY OPEN GOOGLE MAPS FROM RESTAURANT TO CUSTOMER
+        if (order) {
+          launchRouteFromRestaurantToCustomer(order);
+        }
+
       } catch (err) {
         showToast("Error: " + err.message, "danger");
       }
