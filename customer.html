@@ -63,6 +63,29 @@
     .justify-between { justify-content: space-between; }
     .gap-2 { gap: 8px; }
 
+    /* ANIMATIONS FOR ORDER STATES */
+    @keyframes cookPulse {
+      0% { transform: scale(1) rotate(0deg); }
+      50% { transform: scale(1.18) rotate(-12deg); }
+      100% { transform: scale(1) rotate(0deg); }
+    }
+    .cooking-animation {
+      display: inline-block;
+      font-size: 42px;
+      animation: cookPulse 1.2s ease-in-out infinite;
+    }
+
+    @keyframes pulseGlow {
+      0% { opacity: 0.6; transform: scale(0.96); }
+      50% { opacity: 1; transform: scale(1.05); }
+      100% { opacity: 0.6; transform: scale(0.96); }
+    }
+    .waiting-pulse {
+      display: inline-block;
+      font-size: 38px;
+      animation: pulseGlow 1.5s ease-in-out infinite;
+    }
+
     /* FULL PAGE LOADER OVERLAY TO PREVENT FLICKER */
     #page-loader {
       position: fixed;
@@ -2156,7 +2179,7 @@
       const isDelivered = normStatus === 'DELIVERED';
       const isCancelled = normStatus === 'CANCELLED';
 
-      // STATUS CHECK FOR RIDER & MAP VISIBILITY (ONLY WHEN READY_FOR_PICKUP, PICKED_UP, OR OUT_FOR_DELIVERY)
+      // RIDER & MAP DETAILS SHOW ONLY WHEN RESTAURANT MARKS READY_FOR_PICKUP OR LATER
       const isReadyForPickupOrLater = ['READY_FOR_PICKUP', 'PICKED_UP', 'OUT_FOR_DELIVERY'].includes(normStatus);
 
       const statuses = ["PLACED", "ACCEPTED", "PREPARING", "READY_FOR_PICKUP", "PICKED_UP", "OUT_FOR_DELIVERY", "DELIVERED"];
@@ -2295,7 +2318,7 @@
         ratingSectionHtml = riderRatingCardHtml + restaurantRatingCardHtml;
 
       } else {
-        // CONDITIONAL RENDERING: SHOW MAP & RIDER DETAILS ONLY WHEN READY_FOR_PICKUP OR LATER
+        // ACCURATE ORDER STATUS UI FLOW
         if (isReadyForPickupOrLater) {
           mapSectionHtml = `
             <div class="restaurant-card" style="padding:16px; margin-top:16px; border-left:4px solid var(--primary);">
@@ -2342,13 +2365,22 @@
               ` : '<p style="font-size:12px; color:var(--warning); margin-top:8px;">Assigning Delivery Partner...</p>'}
             </div>
           `;
-        } else {
-          // SHOW CLEAN MESSAGE WHILE RESTAURANT PREPARES ORDER
+        } else if (normStatus === 'PLACED') {
+          // 1. ORDER PLACED STATE (WAITING FOR CONFIRMATION)
           mapSectionHtml = `
-            <div style="background:var(--bg-card); padding:20px; border-radius:var(--radius-md); border:1px dashed var(--primary); margin-top:16px; text-align:center; box-shadow:var(--shadow-sm);">
-              <div style="font-size:32px; margin-bottom:8px;">👨‍🍳</div>
-              <h4 style="font-size:15px; color:var(--text-main); margin-bottom:4px; font-weight:700;">Food is being prepared</h4>
-              <p style="font-size:12px; color:var(--text-muted);">Delivery partner details and live map tracking will appear as soon as the restaurant marks the order <strong>Ready for Pickup</strong>.</p>
+            <div style="background:var(--bg-card); padding:22px 20px; border-radius:var(--radius-md); border:1px dashed var(--warning); margin-top:16px; text-align:center; box-shadow:var(--shadow-sm);">
+              <div class="waiting-pulse" style="margin-bottom:8px;">⏳</div>
+              <h4 style="font-size:15px; color:var(--text-main); margin-bottom:4px; font-weight:700;">Order Placed! Waiting for Confirmation</h4>
+              <p style="font-size:12px; color:var(--text-muted);">Aapka order restaurant ke paas bhej diya gaya hai. Restaurant ke accept karte hi khana banna shuru ho jayega.</p>
+            </div>
+          `;
+        } else if (normStatus === 'ACCEPTED' || normStatus === 'PREPARING') {
+          // 2. FOOD PREPARING STATE (WITH COOKING ANIMATION)
+          mapSectionHtml = `
+            <div style="background:var(--bg-card); padding:22px 20px; border-radius:var(--radius-md); border:1px dashed var(--primary); margin-top:16px; text-align:center; box-shadow:var(--shadow-sm);">
+              <div class="cooking-animation" style="margin-bottom:8px;">🍳</div>
+              <h4 style="font-size:15px; color:var(--primary); margin-bottom:4px; font-weight:700;">Khana Tayar Ho Raha Hai...</h4>
+              <p style="font-size:12px; color:var(--text-muted);">Restaurant ne order accept kar liya hai aur aapka khana tayaar kiya ja raha hai. Ready for pickup hone par delivery partner details aur map tracking start ho jayegi.</p>
             </div>
           `;
         }
