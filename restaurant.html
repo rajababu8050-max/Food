@@ -5,6 +5,13 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Hunger Food - Restaurant Partner Panel</title>
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  
+  <!-- LEAFLET & ROUTING MACHINE CDN FOR LIVE BLUE LINE ROUTE -->
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+  <link rel="stylesheet" href="https://unpkg.com/leaflet-routing-machine@latest/dist/leaflet-routing-machine.css" />
+  <script src="https://unpkg.com/leaflet-routing-machine@latest/dist/leaflet-routing-machine.js"></script>
+
   <style>
     :root {
       --primary: #ff4757;
@@ -166,6 +173,8 @@
     .file-upload-box { border: 2px dashed #cbd5e1; padding: 16px; border-radius: 8px; text-align: center; background: #f8fafc; cursor: pointer; margin-bottom: 10px; transition: all 0.2s; }
     .file-upload-box:hover { border-color: var(--primary); background: var(--primary-soft); }
     .img-upload-preview { width: 100%; height: 130px; object-fit: cover; border-radius: 8px; margin-top: 10px; border: 1px solid var(--border-color); }
+
+    .leaflet-routing-container { display: none !important; }
   </style>
 </head>
 <body>
@@ -981,6 +990,8 @@
 
       container.innerHTML = entries.map(([id, o]) => {
         const normStatus = window.normalizeStatus(o.status);
+        const isReadyOrLater = ['READY_FOR_PICKUP', 'PICKED_UP', 'OUT_FOR_DELIVERY'].includes(normStatus);
+
         return `
           <div class="order-card">
             <div class="order-header">
@@ -999,6 +1010,16 @@
             ${['READY_FOR_PICKUP', 'PREPARING'].includes(normStatus) ? `
               <div style="background:var(--warning-soft); color:#b45309; border:1px solid #fde68a; padding:12px 16px; border-radius:8px; margin-top:12px; font-weight:bold; font-size:14px; text-align:center;">
                 🔑 Pickup Verification OTP for Delivery Partner: <span style="font-size:18px; text-decoration:underline; letter-spacing:2px; color:#d97706;">${o.pickupOtp || 'N/A'}</span>
+              </div>
+            ` : ''}
+
+            ${isReadyOrLater ? `
+              <div style="margin-top:14px; border:1px solid var(--border-color); border-radius:10px; padding:12px; background:#f8fafc;">
+                <div style="font-size:13px; font-weight:700; color:var(--info); margin-bottom:8px; display:flex; align-items:center; justify-content:space-between;">
+                  <span>📍 Live Route & Delivery Partner Tracking</span>
+                  <span style="font-size:11px; background:#dbeafe; color:#1e40af; padding:2px 8px; border-radius:4px;">Ready For Pickup Active</span>
+                </div>
+                <div id="rest-map-${id}" style="height:220px; width:100%; border-radius:8px; border:1px solid var(--border-color); overflow:hidden; background:#e2e8f0;"></div>
               </div>
             ` : ''}
 
@@ -1023,6 +1044,83 @@
           </div>
         `;
       }).join('');
+
+      // Initialize live maps for orders marked READY_FOR_PICKUP or later
+      entries.forEach(([id, o]) => {
+        const normStatus = window.normalizeStatus(o.status);
+        if (['READY_FOR_PICKUP', 'PICKED_UP', 'OUT_FOR_DELIVERY'].includes(normStatus)) {
+          setTimeout(() => initOrderLiveMap(id, o), 300);
+        }
+      });
+    }
+
+    /* ========================================================= */
+    /* LIVE MAP WITH BLUE LINE ROUTE (RESTAURANT + RIDER + HOME)  */
+    /* ========================================================= */
+    function initOrderLiveMap(orderId, order) {
+      const mapContainer = document.getElementById(`rest-map-${orderId}`);
+      if (!mapContainer) return;
+
+      const restLat = Number(window.state.geoCoords.lat || (window.state.restaurant ? window.state.restaurant.lat : 28.6139));
+      const restLng = Number(window.state.geoCoords.lng || (window.state.restaurant ? window.state.restaurant.lng : 77.2090));
+
+      const custLat = order.customerGeoLocation ? Number(order.customerGeoLocation.lat) : restLat;
+      const custLng = order.customerGeoLocation ? Number(order.customerGeoLocation.lng) : restLng;
+
+      const riderLoc = order.liveLocation || { lat: restLat, lng: restLng };
+      const riderLat = Number(riderLoc.lat || restLat);
+      const riderLng = Number(riderLoc.lng || restLng);
+
+      mapContainer.innerHTML = `<div id="map-inner-${orderId}" style="height:100%; width:100%;"></div>`;
+
+      const map = L.map(`map-inner-${orderId}`).setView([restLat, restLng], 13);
+
+      L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+        attribution: '© OpenStreetMap'
+      }).addTo(map);
+
+      // Restaurant Icon
+      L.marker([restLat, restLng]).addTo(map).bindPopup("<b>🏬 Restaurant</b>");
+
+      // Customer Location Icon
+      L.marker([custLat, custLng]).addTo(map).bindPopup("<b>🏡 Customer Address</b>");
+
+      // Bike Icon for Rider
+      const bikeIcon = L.icon({
+        iconUrl: 'https://cdn-icons-png.flaticon.com/512/3198/3198336.png',
+        iconSize: [36, 36],
+        iconAnchor: [18, 18]
+      });
+
+      L.marker([riderLat, riderLng], { icon: bikeIcon }).addTo(map).bindPopup("<b>🛵 Delivery Partner</b>");
+
+      // BLUE LINE ROUTE DRAWING (Rider -> Restaurant -> Customer)
+      try {
+        L.Routing.control({
+          waypoints: [
+            L.latLng(riderLat, riderLng),
+            L.latLng(restLat, restLng),
+            L.latLng(custLat, custLng)
+          ],
+          lineOptions: {
+            styles: [{ color: '#3b82f6', weight: 5, opacity: 0.85 }]
+          },
+          createMarker: function() { return null; },
+          addWaypoints: false,
+          draggableWaypoints: false,
+          fitSelectedRoutes: false,
+          show: false
+        }).addTo(map);
+      } catch (e) {
+        // Fallback simple polyline if routing fails
+        L.polyline([[riderLat, riderLng], [restLat, restLng], [custLat, custLng]], {
+          color: '#3b82f6',
+          weight: 4
+        }).addTo(map);
+      }
+
+      const bounds = L.latLngBounds([[riderLat, riderLng], [restLat, restLng], [custLat, custLng]]);
+      map.fitBounds(bounds, { padding: [30, 30] });
     }
 
     window.toggleRestCustomReason = function(val) {
