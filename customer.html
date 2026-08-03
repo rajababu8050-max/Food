@@ -2537,7 +2537,7 @@
     };
 
     /* ========================================================================= */
-    /* LIVE MAP WITH DISTINCT ICONS & DYNAMIC BLUE ROUTE LINE DRAWING           */
+    /* LIVE MAP WITH DYNAMIC START & END POINTS FOR BLUE ROUTE LINE DRAWING      */
     /* ========================================================================= */
     function initLiveMapTracking(orderId) {
       const order = window.state.orders[orderId];
@@ -2617,9 +2617,9 @@
             try { liveMap.removeControl(routingControl); } catch(e) {}
           }
 
-          // DYNAMIC BLUE LINE ROUTE BASED ON DELIVERY STAGE
-          // 1. READY_FOR_PICKUP: Route from Rider -> Restaurant (Going to pick up food)
-          // 2. PICKED_UP / OUT_FOR_DELIVERY: Route from Restaurant -> Customer (Going to deliver food)
+          // DYNAMIC BLUE LINE ROUTE POINTS:
+          // 1. READY_FOR_PICKUP: Start = Delivery Boy Live Location -> End = Restaurant Location
+          // 2. OUT_FOR_DELIVERY / PICKED_UP: Start = Delivery Boy Live Location -> End = Customer Home Address
           let routeWaypoints = [];
           if (normStatus === 'READY_FOR_PICKUP') {
             routeWaypoints = [
@@ -2628,7 +2628,7 @@
             ];
           } else {
             routeWaypoints = [
-              L.latLng(restLat, restLng),
+              L.latLng(currentRiderLat, currentRiderLng),
               L.latLng(custLat, custLng)
             ];
           }
@@ -2655,7 +2655,7 @@
 
                 const etaBadge = document.getElementById('eta-badge');
                 if (etaBadge) {
-                  const stageText = normStatus === 'READY_FOR_PICKUP' ? 'Rider arriving at restaurant in' : 'Arriving at home in';
+                  const stageText = normStatus === 'READY_FOR_PICKUP' ? 'Rider arriving at restaurant in' : 'Delivery boy arriving at home in';
                   etaBadge.innerHTML = `🛵 ${stageText} <strong>${travelTimeMinutes} mins</strong> (${distanceKm} km)`;
                 }
               }
@@ -2665,7 +2665,7 @@
             L.polyline(routeWaypoints, { color: '#3b82f6', weight: 5 }).addTo(liveMap);
           }
 
-          const bounds = L.latLngBounds([ [currentRiderLat, currentRiderLng], [restLat, restLng], [custLat, custLng] ]);
+          const bounds = L.latLngBounds(routeWaypoints);
           liveMap.fitBounds(bounds, { padding: [40, 40] });
         });
       }, 300);
